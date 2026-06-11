@@ -1,0 +1,2 @@
+import { IsArray, IsOptional, IsString, IsNumber } from 'class-validator';
+export class UpdateProfileDto { @IsOptional() @IsString() fullName?: string; @IsOptional() @IsString() headline?: string; @IsOptional() @IsString() phone?: string; @IsOptional() @IsString() country?: string; @IsOptional() @IsString() timezone?: string; @IsOptional() @IsNumber() yearsExperience?: number; @IsOptional() @IsString() currentCompany?: string; @IsOptional() @IsString() targetRole?: string; @IsOptional() @IsArray() targetCompanies?: string[]; @IsOptional() @IsString() bio?: string; }

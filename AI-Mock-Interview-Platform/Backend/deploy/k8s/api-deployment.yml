@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-interview-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mock-interview-api
+  template:
+    metadata:
+      labels:
+        app: mock-interview-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/your-org/mock-interview-api:latest
+          ports:
+            - containerPort: 4000
+          envFrom:
+            - secretRef:
+                name: mock-interview-secrets
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 4000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-interview-api
+spec:
+  selector:
+    app: mock-interview-api
+  ports:
+    - port: 80
+      targetPort: 4000
+  type: ClusterIP
