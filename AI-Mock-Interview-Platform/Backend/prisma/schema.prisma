@@ -1,165 +1,426 @@
-﻿generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
 
-enum Role { USER ADMIN }
-enum SubscriptionStatus { FREE TRIAL ACTIVE PAST_DUE CANCELED }
-enum InterviewStatus { SCHEDULED LIVE COMPLETED CANCELED FAILED }
-enum InterviewType { HR TECHNICAL BEHAVIORAL SYSTEM_DESIGN CODING COMPANY_SPECIFIC }
-enum Difficulty { EASY MEDIUM HARD EXPERT }
-enum RecordingType { AUDIO VIDEO SCREEN TRANSCRIPT }
-enum PaymentProvider { STRIPE RAZORPAY }
-enum NotificationChannel { EMAIL SMS PUSH IN_APP }
-enum NotificationStatus { PENDING SENT FAILED READ }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 model User {
-  id String @id @default(uuid())
-  email String @unique
-  passwordHash String?
-  role Role @default(USER)
-  isEmailVerified Boolean @default(false)
-  emailVerifiedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  profile UserProfile?
-  skills UserSkill[]
-  resumes Resume[]
-  interviews Interview[]
-  sessions Session[]
-  oauthAccounts OAuthAccount[]
-  passwordResets PasswordResetToken[]
-  emailTokens EmailVerificationToken[]
-  analytics PerformanceMetric[]
-  subscriptions Subscription[]
-  payments Payment[]
-  notifications Notification[]
-  devices Device[]
+  id                String                   @id @default(uuid())
+  email             String                   @unique
+  passwordHash      String?
+  role              Role                     @default(USER)
+  isEmailVerified   Boolean                  @default(false)
+  emailVerifiedAt   DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
   codingSubmissions CodingSubmission[]
+  devices           Device[]
+  emailTokens       EmailVerificationToken[]
+  interviews        Interview[]
+  notifications     Notification[]
+  oauthAccounts     OAuthAccount[]
+  passwordResets    PasswordResetToken[]
+  payments          Payment[]
+  analytics         PerformanceMetric[]
+  resumes           Resume[]
+  sessions          Session[]
+  subscriptions     Subscription[]
+  profile           UserProfile?
+  skills            UserSkill[]
 }
 
 model UserProfile {
-  id String @id @default(uuid())
-  userId String @unique
-  fullName String
-  headline String?
-  phone String?
-  country String?
-  timezone String?
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  fullName        String
+  headline        String?
+  phone           String?
+  country         String?
+  timezone        String?
   yearsExperience Float?
-  currentCompany String?
-  targetRole String?
+  currentCompany  String?
+  targetRole      String?
   targetCompanies String[]
-  bio String?
-  avatarUrl String?
-  metadata Json?
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio             String?
+  avatarUrl       String?
+  metadata        Json?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UserSkill {
-  id String @id @default(uuid())
-  userId String
-  name String
-  level Int @default(1)
-  years Float?
-  verified Boolean @default(false)
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  level     Int      @default(1)
+  years     Float?
+  verified  Boolean  @default(false)
   createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, name])
 }
 
 model OAuthAccount {
-  id String @id @default(uuid())
-  userId String
-  provider String
+  id             String   @id @default(uuid())
+  userId         String
+  provider       String
   providerUserId String
-  email String?
-  createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email          String?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerUserId])
 }
 
 model Session {
-  id String @id @default(uuid())
-  userId String
+  id          String    @id @default(uuid())
+  userId      String
   refreshHash String
-  ipAddress String?
-  userAgent String?
-  deviceId String?
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress   String?
+  userAgent   String?
+  deviceId    String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Device {
-  id String @id @default(uuid())
-  userId String
+  id          String   @id @default(uuid())
+  userId      String
   fingerprint String
-  name String?
-  ipAddress String?
-  userAgent String?
-  lastSeenAt DateTime @default(now())
-  trusted Boolean @default(false)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String?
+  ipAddress   String?
+  userAgent   String?
+  lastSeenAt  DateTime @default(now())
+  trusted     Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, fingerprint])
 }
 
-model PasswordResetToken { id String @id @default(uuid()) userId String tokenHash String expiresAt DateTime usedAt DateTime? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) }
-model EmailVerificationToken { id String @id @default(uuid()) userId String tokenHash String expiresAt DateTime usedAt DateTime? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) }
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
 model Resume {
-  id String @id @default(uuid())
-  userId String
-  fileName String
-  mimeType String
-  storageKey String
-  parsedText String?
+  id             String              @id @default(uuid())
+  userId         String
+  fileName       String
+  mimeType       String
+  storageKey     String
+  parsedText     String?
   structuredData Json?
-  parsingStatus String @default("PENDING")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  questions InterviewQuestion[]
+  parsingStatus  String              @default("PENDING")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  questions      InterviewQuestion[]
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Interview {
-  id String @id @default(uuid())
-  userId String
-  resumeId String?
-  companyId String?
-  type InterviewType
-  difficulty Difficulty @default(MEDIUM)
-  language String @default("en")
-  status InterviewStatus @default(SCHEDULED)
-  title String
+  id          String              @id @default(uuid())
+  userId      String
+  resumeId    String?
+  companyId   String?
+  type        InterviewType
+  difficulty  Difficulty          @default(MEDIUM)
+  language    String              @default("en")
+  status      InterviewStatus     @default(SCHEDULED)
+  title       String
   scheduledAt DateTime?
-  startedAt DateTime?
-  endedAt DateTime?
-  aiContext Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company CompanyDataset? @relation(fields: [companyId], references: [id])
-  messages InterviewMessage[]
-  questions InterviewQuestion[]
-  recordings Recording[]
-  report FeedbackReport?
-  metrics PerformanceMetric[]
+  startedAt   DateTime?
+  endedAt     DateTime?
+  aiContext   Json?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  report      FeedbackReport?
+  company     CompanyDataset?     @relation(fields: [companyId], references: [id])
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    InterviewMessage[]
+  questions   InterviewQuestion[]
+  metrics     PerformanceMetric[]
+  recordings  Recording[]
 }
 
-model InterviewMessage { id String @id @default(uuid()) interviewId String role String content String audioUrl String? metadata Json? createdAt DateTime @default(now()) interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade) }
-model InterviewQuestion { id String @id @default(uuid()) interviewId String? resumeId String? companyId String? prompt String topic String? difficulty Difficulty @default(MEDIUM) expected String? metadata Json? createdAt DateTime @default(now()) interview Interview? @relation(fields: [interviewId], references: [id], onDelete: Cascade) resume Resume? @relation(fields: [resumeId], references: [id], onDelete: Cascade) company CompanyDataset? @relation(fields: [companyId], references: [id]) }
-model Recording { id String @id @default(uuid()) interviewId String type RecordingType storageKey String durationSec Int? transcript String? analysis Json? timestamps Json? createdAt DateTime @default(now()) interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade) }
-model FeedbackReport { id String @id @default(uuid()) interviewId String @unique communicationScore Float technicalScore Float confidenceScore Float grammarScore Float behavioralScore Float eyeContactScore Float? fillerWordCount Int @default(0) readinessScore Float strengths String[] weaknesses String[] suggestions String[] rawAnalysis Json? createdAt DateTime @default(now()) interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade) }
+model InterviewMessage {
+  id          String    @id @default(uuid())
+  interviewId String
+  role        String
+  content     String
+  audioUrl    String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
 
-model CodingQuestion { id String @id @default(uuid()) slug String @unique title String description String difficulty Difficulty tags String[] constraints String? examples Json createdAt DateTime @default(now()) updatedAt DateTime @updatedAt testCases CodingTestCase[] submissions CodingSubmission[] }
-model CodingTestCase { id String @id @default(uuid()) questionId String input Json expected Json hidden Boolean @default(false) weight Float @default(1) question CodingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade) }
-model CodingSubmission { id String @id @default(uuid()) userId String questionId String language String sourceCode String status String runtimeMs Int? memoryKb Int? testResults Json? plagiarism Json? aiFeedback Json? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) question CodingQuestion @relation(fields: [questionId], references: [id]) }
+model InterviewQuestion {
+  id          String          @id @default(uuid())
+  interviewId String?
+  resumeId    String?
+  companyId   String?
+  prompt      String
+  topic       String?
+  difficulty  Difficulty      @default(MEDIUM)
+  expected    String?
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+  company     CompanyDataset? @relation(fields: [companyId], references: [id])
+  interview   Interview?      @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  resume      Resume?         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
 
-model CompanyDataset { id String @id @default(uuid()) name String @unique patterns Json roles Json faqs Json metadata Json? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt interviews Interview[] questions InterviewQuestion[] }
-model StudyPlan { id String @id @default(uuid()) userId String readinessScore Float weakTopics String[] dailyTasks Json generatedBy String createdAt DateTime @default(now()) }
-model SubscriptionPlan { id String @id @default(uuid()) code String @unique name String priceCents Int currency String limits Json features String[] active Boolean @default(true) subscriptions Subscription[] }
-model Subscription { id String @id @default(uuid()) userId String planId String provider PaymentProvider providerSubId String? status SubscriptionStatus @default(FREE) currentPeriodEnd DateTime? usage Json? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt user User @relation(fields: [userId], references: [id], onDelete: Cascade) plan SubscriptionPlan @relation(fields: [planId], references: [id]) }
-model Payment { id String @id @default(uuid()) userId String provider PaymentProvider providerRef String amountCents Int currency String status String metadata Json? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) }
-model Notification { id String @id @default(uuid()) userId String channel NotificationChannel status NotificationStatus @default(PENDING) subject String? body String metadata Json? sentAt DateTime? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) }
-model PerformanceMetric { id String @id @default(uuid()) userId String interviewId String? metric String value Float dimensions Json? createdAt DateTime @default(now()) user User @relation(fields: [userId], references: [id], onDelete: Cascade) interview Interview? @relation(fields: [interviewId], references: [id], onDelete: Cascade) }
-model AuditLog { id String @id @default(uuid()) actorUserId String? action String entity String entityId String? ipAddress String? metadata Json? createdAt DateTime @default(now()) }
+model Recording {
+  id          String        @id @default(uuid())
+  interviewId String
+  type        RecordingType
+  storageKey  String
+  durationSec Int?
+  transcript  String?
+  analysis    Json?
+  timestamps  Json?
+  createdAt   DateTime      @default(now())
+  interview   Interview     @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model FeedbackReport {
+  id                 String    @id @default(uuid())
+  interviewId        String    @unique
+  communicationScore Float
+  technicalScore     Float
+  confidenceScore    Float
+  grammarScore       Float
+  behavioralScore    Float
+  eyeContactScore    Float?
+  fillerWordCount    Int       @default(0)
+  readinessScore     Float
+  strengths          String[]
+  weaknesses         String[]
+  suggestions        String[]
+  rawAnalysis        Json?
+  createdAt          DateTime  @default(now())
+  interview          Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model CodingQuestion {
+  id          String             @id @default(uuid())
+  slug        String             @unique
+  title       String
+  description String
+  difficulty  Difficulty
+  tags        String[]
+  constraints String?
+  examples    Json
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  submissions CodingSubmission[]
+  testCases   CodingTestCase[]
+}
+
+model CodingTestCase {
+  id         String         @id @default(uuid())
+  questionId String
+  input      Json
+  expected   Json
+  hidden     Boolean        @default(false)
+  weight     Float          @default(1)
+  question   CodingQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model CodingSubmission {
+  id          String         @id @default(uuid())
+  userId      String
+  questionId  String
+  language    String
+  sourceCode  String
+  status      String
+  runtimeMs   Int?
+  memoryKb    Int?
+  testResults Json?
+  plagiarism  Json?
+  aiFeedback  Json?
+  createdAt   DateTime       @default(now())
+  question    CodingQuestion @relation(fields: [questionId], references: [id])
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CompanyDataset {
+  id         String              @id @default(uuid())
+  name       String              @unique
+  patterns   Json
+  roles      Json
+  faqs       Json
+  metadata   Json?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  interviews Interview[]
+  questions  InterviewQuestion[]
+}
+
+model StudyPlan {
+  id             String   @id @default(uuid())
+  userId         String
+  readinessScore Float
+  weakTopics     String[]
+  dailyTasks     Json
+  generatedBy    String
+  createdAt      DateTime @default(now())
+}
+
+model SubscriptionPlan {
+  id            String         @id @default(uuid())
+  code          String         @unique
+  name          String
+  priceCents    Int
+  currency      String
+  limits        Json
+  features      String[]
+  active        Boolean        @default(true)
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id               String             @id @default(uuid())
+  userId           String
+  planId           String
+  provider         PaymentProvider
+  providerSubId    String?
+  status           SubscriptionStatus @default(FREE)
+  currentPeriodEnd DateTime?
+  usage            Json?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  plan             SubscriptionPlan   @relation(fields: [planId], references: [id])
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id          String          @id @default(uuid())
+  userId      String
+  provider    PaymentProvider
+  providerRef String
+  amountCents Int
+  currency    String
+  status      String
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  channel   NotificationChannel
+  status    NotificationStatus  @default(PENDING)
+  subject   String?
+  body      String
+  metadata  Json?
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PerformanceMetric {
+  id          String     @id @default(uuid())
+  userId      String
+  interviewId String?
+  metric      String
+  value       Float
+  dimensions  Json?
+  createdAt   DateTime   @default(now())
+  interview   Interview? @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  action      String
+  entity      String
+  entityId    String?
+  ipAddress   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  FREE
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELED
+  FAILED
+}
+
+enum InterviewType {
+  HR
+  TECHNICAL
+  BEHAVIORAL
+  SYSTEM_DESIGN
+  CODING
+  COMPANY_SPECIFIC
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum RecordingType {
+  AUDIO
+  VIDEO
+  SCREEN
+  TRANSCRIPT
+}
+
+enum PaymentProvider {
+  STRIPE
+  RAZORPAY
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}

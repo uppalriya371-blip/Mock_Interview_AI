@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { BullModule } from '@nestjs/bullmq';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health.controller';
 import { DatabaseModule } from './database/database.module';
@@ -24,7 +23,29 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), LoggerModule.forRoot({ pinoHttp: { redact: ['req.headers.authorization', 'req.headers.cookie'] } }), ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]), BullModule.forRoot({ connection: { url: process.env.REDIS_URL ?? 'redis://localhost:6379' } }), DatabaseModule, AiModule, StorageModule, QueueModule, AuthModule, UsersModule, ResumesModule, InterviewsModule, AvatarModule, RecordingsModule, FeedbackModule, CodingModule, CompaniesModule, RecommendationsModule, NotificationsModule, PaymentsModule, AnalyticsModule, AdminModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    LoggerModule.forRoot({ pinoHttp: { redact: ['req.headers.authorization', 'req.headers.cookie'] } }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
+    DatabaseModule,
+    AiModule,
+    StorageModule,
+    QueueModule,
+    AuthModule,
+    UsersModule,
+    ResumesModule,
+    InterviewsModule,
+    AvatarModule,
+    RecordingsModule,
+    FeedbackModule,
+    CodingModule,
+    CompaniesModule,
+    RecommendationsModule,
+    NotificationsModule,
+    PaymentsModule,
+    AnalyticsModule,
+    AdminModule,
+  ],
   controllers: [HealthController],
 })
 export class AppModule {}

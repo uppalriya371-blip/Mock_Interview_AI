@@ -2,7 +2,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'crypto';
 import * as bcrypt from 'bcrypt';
-import dayjs from 'dayjs';
+import * as dayjs from 'dayjs';
 import { PrismaService } from '../../database/prisma.service';
 import { LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
 
@@ -11,17 +11,41 @@ export class AuthService {
   constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) {}
 
   async register(dto: RegisterDto, req: any) {
-    const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (exists) throw new ConflictException('Email already registered');
-    const user = await this.prisma.user.create({ data: { email: dto.email, passwordHash: await bcrypt.hash(dto.password, 12), profile: { create: { fullName: dto.fullName, targetCompanies: [] } } } });
-    await this.createEmailVerification(user.id);
-    return this.issueTokens(user, req);
+    try {
+      const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (exists) throw new ConflictException('Email already registered');
+
+      const user = await this.prisma.user.create({
+        data: {
+          email: dto.email,
+          passwordHash: await bcrypt.hash(dto.password, 12),
+          profile: { create: { fullName: dto.fullName, targetCompanies: [] } },
+        },
+      });
+      console.log('✅ USER CREATED:', user.id);
+
+      await this.createEmailVerification(user.id);
+      console.log('✅ EMAIL VERIFICATION CREATED');
+
+      return await this.issueTokens(user, req);
+    } catch (e: any) {
+      console.error('❌ REGISTER ERROR:', e.message);
+      console.error(e.stack);
+      throw e;
+    }
   }
 
   async login(dto: LoginDto, req: any) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user?.passwordHash || !(await bcrypt.compare(dto.password, user.passwordHash))) throw new UnauthorizedException('Invalid credentials');
-    return this.issueTokens(user, req);
+    try {
+      const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (!user?.passwordHash || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      return await this.issueTokens(user, req);
+    } catch (e: any) {
+      console.error('❌ LOGIN ERROR:', e.message);
+      throw e;
+    }
   }
 
   async refresh(refreshToken: string, req: any) {
@@ -35,7 +59,11 @@ export class AuthService {
 
   async logout(userId: string, refreshToken: string) {
     const sessions = await this.prisma.session.findMany({ where: { userId, revokedAt: null } });
-    for (const session of sessions) if (await bcrypt.compare(refreshToken, session.refreshHash)) await this.prisma.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
+    for (const session of sessions) {
+      if (await bcrypt.compare(refreshToken, session.refreshHash)) {
+        await this.prisma.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
+      }
+    }
     return { ok: true };
   }
 
@@ -52,7 +80,11 @@ export class AuthService {
 
   async requestPasswordReset(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (user) await this.prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash: this.hash(randomBytes(32).toString('hex')), expiresAt: dayjs().add(30, 'minutes').toDate() } });
+    if (user) {
+      await this.prisma.passwordResetToken.create({
+        data: { userId: user.id, tokenHash: this.hash(randomBytes(32).toString('hex')), expiresAt: dayjs().add(30, 'minutes').toDate() },
+      });
+    }
     return { ok: true };
   }
 
@@ -67,14 +99,41 @@ export class AuthService {
   }
 
   private async issueTokens(user: { id: string; email: string; role: string }, req: any) {
+    console.log('🔑 issueTokens - secret set:', !!process.env.JWT_ACCESS_SECRET);
     const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = await this.jwt.signAsync(payload, { secret: process.env.JWT_ACCESS_SECRET, expiresIn: process.env.JWT_ACCESS_TTL ?? '15m' });
-    const refreshToken = await this.jwt.signAsync(payload, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: process.env.JWT_REFRESH_TTL ?? '30d' });
-    await this.prisma.session.create({ data: { userId: user.id, refreshHash: await bcrypt.hash(refreshToken, 12), ipAddress: req.ip, userAgent: req.headers['user-agent'], deviceId: req.headers['x-device-id'], expiresAt: dayjs().add(30, 'days').toDate() } });
-    if (req.headers['x-device-id']) await this.prisma.device.upsert({ where: { userId_fingerprint: { userId: user.id, fingerprint: req.headers['x-device-id'] } }, update: { lastSeenAt: new Date(), ipAddress: req.ip, userAgent: req.headers['user-agent'] }, create: { userId: user.id, fingerprint: req.headers['x-device-id'], ipAddress: req.ip, userAgent: req.headers['user-agent'] } });
+
+    const accessToken = await this.jwt.signAsync(payload, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: process.env.JWT_ACCESS_TTL ?? '15m',
+    });
+    console.log('✅ ACCESS TOKEN CREATED');
+
+    const refreshToken = await this.jwt.signAsync(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: process.env.JWT_REFRESH_TTL ?? '30d',
+    });
+    console.log('✅ REFRESH TOKEN CREATED');
+
+    await this.prisma.session.create({
+      data: {
+        userId: user.id,
+        refreshHash: await bcrypt.hash(refreshToken, 12),
+        ipAddress: req?.ip ?? '127.0.0.1',
+        userAgent: req?.headers?.['user-agent'] ?? '',
+        deviceId: req?.headers?.['x-device-id'] ?? null,
+        expiresAt: dayjs().add(30, 'days').toDate(),
+      },
+    });
+    console.log('✅ SESSION CREATED');
+
     return { accessToken, refreshToken, user: payload };
   }
 
-  private async createEmailVerification(userId: string) { await this.prisma.emailVerificationToken.create({ data: { userId, tokenHash: this.hash(randomBytes(32).toString('hex')), expiresAt: dayjs().add(24, 'hours').toDate() } }); }
+  private async createEmailVerification(userId: string) {
+    await this.prisma.emailVerificationToken.create({
+      data: { userId, tokenHash: this.hash(randomBytes(32).toString('hex')), expiresAt: dayjs().add(24, 'hours').toDate() },
+    });
+  }
+
   private hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
 }
