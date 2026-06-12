@@ -1,0 +1,12 @@
+npm install
+npx prisma generate
+npx prisma migrate dev --name init
+npm run start:dev
+
+cd "C:\Users\SOHAM\Desktop\Ai interviewwer\Backend"
+"C:\Program Files\Redis\redis-server.exe"
+
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+JWT_ACCESS_SECRET=<first output here>
+JWT_REFRESH_SECRET=<second output here>
