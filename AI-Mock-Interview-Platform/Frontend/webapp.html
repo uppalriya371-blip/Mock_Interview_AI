@@ -955,7 +955,7 @@ body{
       <span class="ni">📈</span> Analytics
     </div>
     <div class="nav-item" data-page="recordings">
-      <span class="ni">🎬</span> Recordings <span class="nav-badge">4</span>
+      <span class="ni">🎬</span> Recordings <span class="nav-badge" id="nav-recordings-badge" style="display:none">0</span>
     </div>
     <div class="nav-item" data-page="prep">
       <span class="ni">📚</span> Prep Hub
@@ -965,7 +965,7 @@ body{
       <span class="ni">💎</span> Pricing
     </div>
     <div class="nav-item" data-page="notifications">
-      <span class="ni">🔔</span> Notifications <span class="nav-badge red">3</span>
+      <span class="ni">🔔</span> Notifications <span class="nav-badge red" id="nav-notif-badge" style="display:none">0</span>
     </div>
     <div class="nav-item" data-page="profile">
       <span class="ni">👤</span> Profile
@@ -978,11 +978,12 @@ body{
     <div class="user-card" onclick="showPage('profile')">
       <div class="user-av">AK</div>
       <div class="user-info">
-        <div class="user-name">Arjun Kumar</div>
-        <div class="user-plan">✦ Pro Plan</div>
+        <div class="user-name">User</div>
+        <div class="user-plan">✦ Free Plan</div>
       </div>
       <span style="color:var(--text3);font-size:14px">›</span>
     </div>
+    <button class="btn btn-secondary btn-sm btn-block" style="margin-top:8px" onclick="logout()">⎋ Log Out</button>
   </div>
 </aside>
 
@@ -1397,27 +1398,11 @@ body{
         <div class="code-problem">
           <div>
             <div class="flex-center gap-10 mb-12">
-              <span style="font-size:15px;font-weight:800">42. Trapping Rain Water</span>
+              <span class="section-title" style="font-size:15px;font-weight:800;margin:0">42. Trapping Rain Water</span>
               <span class="difficulty-tag hard">Hard</span>
-              <span class="badge badge-blue">Frequency: 95%</span>
             </div>
-            <p style="font-size:12.5px;color:var(--text2);line-height:1.75;margin-bottom:14px">
+            <div id="coding-problem-description" style="font-size:12.5px;color:var(--text2);line-height:1.75;margin-bottom:14px">
               Given <code style="background:var(--bg4);padding:1px 5px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11.5px">n</code> non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.
-            </p>
-            <div style="background:var(--bg3);border-radius:9px;padding:13px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7">
-              <div style="color:var(--text3);font-size:10.5px;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Example 1</div>
-              Input: height = [0,1,0,2,1,0,1,3,2,1,2,1]<br>Output: 6
-            </div>
-            <div style="background:var(--bg3);border-radius:9px;padding:13px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);line-height:1.7">
-              <div style="color:var(--text3);font-size:10.5px;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Example 2</div>
-              Input: height = [4,2,0,3,2,5]<br>Output: 9
-            </div>
-          </div>
-
-          <div>
-            <div class="section-title">Constraints</div>
-            <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:2">
-              n == height.length<br>1 ≤ n ≤ 2 × 10⁴<br>0 ≤ height[i] ≤ 10⁵
             </div>
           </div>
 
@@ -1430,16 +1415,8 @@ body{
 
           <div>
             <div class="section-title">✅ Test Cases</div>
-            <div class="test-case tc-pass">
-              <div style="color:var(--green);font-size:11px;font-weight:800;margin-bottom:5px">✓ PASSED</div>
-              Input: [0,1,0,2,1,0,1,3,2,1,2,1]<br>Expected: 6 · Got: 6
-            </div>
-            <div class="test-case tc-fail">
-              <div style="color:var(--red);font-size:11px;font-weight:800;margin-bottom:5px">✗ FAILED</div>
-              Input: [4,2,0,3,2,5]<br>Expected: 9 · Got: 7
-            </div>
-            <div class="test-case">
-              Input: [3,0,0,2,0,4]<br>Expected: 10 · Not run yet
+            <div id="coding-test-cases">
+              <div class="text-xs">Load a question to see test cases.</div>
             </div>
           </div>
         </div>
@@ -1447,40 +1424,9 @@ body{
         <!-- Code Editor -->
         <div class="code-editor-area">
           <div class="editor-tabs">
-            <div class="editor-tab active">solution.py</div>
-            <div class="editor-tab">notes.md</div>
-            <div class="editor-tab">scratch.py</div>
+            <div class="editor-tab active" id="editor-filename">solution.py</div>
           </div>
-          <textarea class="code-textarea" id="code-editor" spellcheck="false">def trap(height: list[int]) -> int:
-    """
-    Two-pointer approach.
-    Time Complexity: O(n)
-    Space Complexity: O(1)
-    """
-    left, right = 0, len(height) - 1
-    left_max = right_max = 0
-    water = 0
-
-    while left < right:
-        if height[left] < height[right]:
-            if height[left] >= left_max:
-                left_max = height[left]
-            else:
-                water += left_max - height[left]
-            left += 1
-        else:
-            if height[right] >= right_max:
-                right_max = height[right]
-            else:
-                water += right_max - height[right]
-            right -= 1
-
-    return water
-
-
-# Test
-print(trap([0,1,0,2,1,0,1,3,2,1,2,1]))  # Expected: 6
-print(trap([4,2,0,3,2,5]))               # Expected: 9
+          <textarea class="code-textarea" id="code-editor" spellcheck="false"># Click "New Interview" -> "Coding Room" to load a question
 </textarea>
           <div style="padding:12px 16px;border-top:1px solid var(--border)">
             <div class="section-label mb-8">Output Console</div>
@@ -1490,13 +1436,16 @@ print(trap([4,2,0,3,2,5]))               # Expected: 9
 
         <!-- Footer Controls -->
         <div class="code-footer">
-          <button class="btn btn-secondary btn-sm" onclick="runCode()">▶ Run Code</button>
-          <button class="btn btn-primary btn-sm">Submit Solution</button>
+          <button class="btn btn-primary btn-sm" onclick="submitCode()">Submit Solution</button>
           <button class="btn btn-secondary btn-sm" onclick="showHint()">💡 AI Hint</button>
           <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <span class="text-xs">Complexity:</span>
-            <span class="badge badge-blue">Time: O(n)</span>
-            <span class="badge badge-purple">Space: O(1)</span>
+            <select id="code-language-select" class="form-input" style="width:auto;padding:6px 10px;font-size:12px">
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="go">Go</option>
+            </select>
           </div>
         </div>
       </div>
@@ -1509,133 +1458,19 @@ print(trap([4,2,0,3,2,5]))               # Expected: 9
       <div class="flex-between mb-20" style="flex-wrap:wrap;gap:12px">
         <div>
           <div class="page-title">Interview Performance Report</div>
-          <div class="page-sub">Amazon · Senior SDE · System Design Round · June 1, 2026</div>
+          <div class="page-sub" id="analytics-subtitle">Select a completed interview to view its report</div>
         </div>
         <div class="flex gap-8">
-          <button class="btn btn-secondary btn-sm">⬇ Download PDF</button>
-          <button class="btn btn-secondary btn-sm">📤 Share</button>
+          <select id="analytics-interview-select" class="form-input" style="max-width:280px" onchange="loadAnalyticsReport(this.value)"></select>
           <button class="btn btn-primary btn-sm" onclick="showPage('setup')">🔄 New Interview</button>
         </div>
       </div>
 
-      <div class="stats-grid mb-20">
-        <div class="stat-card sc-green">
-          <div class="stat-label">Overall Score</div>
-          <div class="stat-value text-gradient">84%</div>
-          <div class="stat-change stat-up">↑ +6% vs your average</div>
-        </div>
-        <div class="stat-card sc-blue">
-          <div class="stat-label">Confidence</div>
-          <div class="stat-value">78%</div>
-          <div class="stat-change stat-up">↑ Good</div>
-        </div>
-        <div class="stat-card sc-purple">
-          <div class="stat-label">Technical Accuracy</div>
-          <div class="stat-value">91%</div>
-          <div class="stat-change stat-up">↑ Excellent</div>
-        </div>
-        <div class="stat-card sc-orange">
-          <div class="stat-label">Filler Words</div>
-          <div class="stat-value">14</div>
-          <div class="stat-change stat-down">↓ Needs improvement</div>
-        </div>
-      </div>
-
-      <div class="analytics-grid">
-        <!-- Score Breakdown -->
-        <div class="card">
-          <div class="section-title">📊 Score Breakdown</div>
-          <div class="flex-col gap-12">
-            <div>
-              <div class="flex-between text-sm mb-4"><span>Communication</span><span style="color:var(--green);font-weight:700">85%</span></div>
-              <div class="progress-bar"><div class="progress-fill pb-green" style="width:85%"></div></div>
-            </div>
-            <div>
-              <div class="flex-between text-sm mb-4"><span>Technical Knowledge</span><span style="color:var(--blue);font-weight:700">91%</span></div>
-              <div class="progress-bar"><div class="progress-fill pb-blue" style="width:91%"></div></div>
-            </div>
-            <div>
-              <div class="flex-between text-sm mb-4"><span>Problem Solving</span><span style="color:var(--purple);font-weight:700">88%</span></div>
-              <div class="progress-bar"><div class="progress-fill pb-purple" style="width:88%"></div></div>
-            </div>
-            <div>
-              <div class="flex-between text-sm mb-4"><span>Eye Contact</span><span style="color:var(--yellow);font-weight:700">72%</span></div>
-              <div class="progress-bar"><div class="progress-fill pb-orange" style="width:72%"></div></div>
-            </div>
-            <div>
-              <div class="flex-between text-sm mb-4"><span>Speech Clarity</span><span style="color:var(--orange);font-weight:700">79%</span></div>
-              <div class="progress-bar"><div class="progress-fill pb-orange" style="width:79%"></div></div>
-            </div>
-            <div>
-              <div class="flex-between text-sm mb-4"><span>Confidence</span><span style="color:var(--cyan);font-weight:700">78%</span></div>
-              <div class="progress-bar"><div class="progress-fill pb-cyan" style="width:78%"></div></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- AI Observations -->
-        <div class="card">
-          <div class="section-title">🔍 AI Feedback</div>
-          <div class="observation-item" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2)">
-            <span>✅</span>
-            <div class="text-sm"><strong style="color:var(--text1)">Strong system design thinking.</strong> You clearly articulated the sharding strategy and consistent hashing approach with real-world justification.</div>
-          </div>
-          <div class="observation-item" style="background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2)">
-            <span>⚠️</span>
-            <div class="text-sm"><strong style="color:var(--text1)">Filler words detected:</strong> "umm" (6×), "like" (5×), "you know" (3×). Practice with the mirror exercise in Prep Hub to reduce this.</div>
-          </div>
-          <div class="observation-item" style="background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2)">
-            <span>💡</span>
-            <div class="text-sm"><strong style="color:var(--text1)">Eye contact:</strong> You looked away frequently during complex questions. Maintain eye contact while thinking — it signals confidence.</div>
-          </div>
-          <div class="observation-item" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)">
-            <span>❌</span>
-            <div class="text-sm"><strong style="color:var(--text1)">Missed CAP theorem tradeoffs</strong> when discussing consistency vs availability for the cache design. This is a critical Amazon SDE topic.</div>
-          </div>
-          <div class="observation-item" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2)">
-            <span>✅</span>
-            <div class="text-sm"><strong style="color:var(--text1)">Structured answers well.</strong> Your use of the STAR method for behavioral questions was natural and effective.</div>
-          </div>
-        </div>
-
-        <!-- Learning Roadmap -->
-        <div class="card">
-          <div class="section-title">🗺️ Personalized Roadmap</div>
-          <div class="roadmap-item">
-            <div class="rm-dot" style="background:var(--red)"></div>
-            <div>
-              <div style="font-size:13px;font-weight:700;margin-bottom:2px">CAP Theorem Deep Dive</div>
-              <div class="text-xs">Review consistency models, partitions, and real-world trade-offs in distributed systems</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <div class="rm-dot" style="background:var(--orange)"></div>
-            <div>
-              <div style="font-size:13px;font-weight:700;margin-bottom:2px">Distributed Systems Patterns</div>
-              <div class="text-xs">Leader election, consensus algorithms (Raft/Paxos), vector clocks</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <div class="rm-dot" style="background:var(--yellow)"></div>
-            <div>
-              <div style="font-size:13px;font-weight:700;margin-bottom:2px">Public Speaking Confidence</div>
-              <div class="text-xs">Daily mirror exercises and Toastmasters-style practice to eliminate filler words</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <div class="rm-dot" style="background:var(--green)"></div>
-            <div>
-              <div style="font-size:13px;font-weight:700;margin-bottom:2px">Redis Architecture Internals</div>
-              <div class="text-xs">Persistence (AOF/RDB), replication, cluster mode, eviction policies</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <div class="rm-dot" style="background:var(--blue)"></div>
-            <div>
-              <div style="font-size:13px;font-weight:700;margin-bottom:2px">Mock Again: System Design</div>
-              <div class="text-xs">Retake this round targeting 90%+ with the new knowledge applied</div>
-            </div>
-          </div>
+      <div id="analytics-content">
+        <div class="card" style="text-align:center;padding:40px 20px">
+          <div style="font-size:40px;margin-bottom:10px">📊</div>
+          <div style="font-weight:700;margin-bottom:6px">No completed interviews yet</div>
+          <div class="text-xs">Complete an interview to generate your performance report.</div>
         </div>
       </div>
     </section>
@@ -1809,7 +1644,7 @@ print(trap([4,2,0,3,2,5]))               # Expected: 9
             <li>5 coding problems</li>
             <li>HR question bank</li>
           </ul>
-          <button class="btn btn-secondary btn-block">Current Plan</button>
+          <button class="btn btn-secondary btn-block" id="plan-free-btn" disabled>Current Plan</button>
         </div>
         <div class="price-card featured">
           <div class="price-name">Pro</div>
@@ -1824,7 +1659,7 @@ print(trap([4,2,0,3,2,5]))               # Expected: 9
             <li>Company-specific prep packs</li>
             <li>Priority support</li>
           </ul>
-          <button class="btn btn-primary btn-block">Upgrade to Pro →</button>
+          <button class="btn btn-primary btn-block" onclick="upgradePlan('PRO')">Upgrade to Pro →</button>
         </div>
         <div class="price-card">
           <div class="price-name">Enterprise</div>
@@ -1838,7 +1673,7 @@ print(trap([4,2,0,3,2,5]))               # Expected: 9
             <li>Dedicated account manager</li>
             <li>API access & webhooks</li>
           </ul>
-          <button class="btn btn-secondary btn-block">Contact Sales</button>
+          <button class="btn btn-secondary btn-block" onclick="upgradePlan('ENTERPRISE')">Contact Sales</button>
         </div>
       </div>
     </section>
@@ -1912,17 +1747,14 @@ print(trap([4,2,0,3,2,5]))               # Expected: 9
       <div class="tab-content" id="profile-billing">
         <div class="card" style="max-width:520px">
           <div class="flex-between mb-16">
-            <div><div style="font-size:14px;font-weight:700">Current Plan</div><div class="text-xs mt-4">Pro · Renews June 1, 2026</div></div>
-            <span class="badge badge-blue">✦ Pro Active</span>
+            <div><div style="font-size:14px;font-weight:700">Current Plan</div><div class="text-xs mt-4" id="billing-renew-info">Free plan</div></div>
+            <span class="badge badge-gray" id="billing-plan-badge">Free</span>
           </div>
-          <div style="background:var(--bg3);border-radius:10px;padding:16px;border:1px solid var(--border);margin-bottom:16px">
-            <div class="flex-between text-sm mb-8"><span>Monthly charge</span><span style="font-weight:700;color:var(--text1)">₹599</span></div>
-            <div class="flex-between text-sm mb-8"><span>Next billing date</span><span>July 1, 2026</span></div>
-            <div class="flex-between text-sm"><span>Payment method</span><span>•••• •••• •••• 4242</span></div>
+          <div id="billing-history-content" style="background:var(--bg3);border-radius:10px;padding:16px;border:1px solid var(--border);margin-bottom:16px">
+            <div class="text-xs">No billing history yet.</div>
           </div>
           <div class="flex gap-8">
-            <button class="btn btn-secondary">Update Payment</button>
-            <button class="btn btn-danger">Cancel Plan</button>
+            <button class="btn btn-primary" onclick="showPage('pricing')">View Plans</button>
           </div>
         </div>
       </div>
@@ -1936,10 +1768,9 @@ print(trap([4,2,0,3,2,5]))               # Expected: 9
       <div class="page-sub">Platform management · Real-time analytics · AI model controls</div>
 
       <div class="stats-grid mb-20">
-        <div class="stat-card sc-blue"><div class="stat-label">Total Users</div><div class="stat-value">12,847</div><div class="stat-change stat-up">↑ +234 today</div></div>
-        <div class="stat-card sc-green"><div class="stat-label">Active Subscriptions</div><div class="stat-value">3,421</div><div class="stat-change stat-up">↑ 26.6% conversion</div></div>
-        <div class="stat-card sc-purple"><div class="stat-label">Interviews Today</div><div class="stat-value">1,892</div><div class="stat-change stat-up">↑ Peak hour: 7 PM</div></div>
-        <div class="stat-card sc-orange"><div class="stat-label">MRR</div><div class="stat-value">₹2.1M</div><div class="stat-change stat-up">↑ +18% MoM</div></div>
+        <div class="stat-card sc-blue"><div class="stat-label">Total Users</div><div class="stat-value" id="admin-stat-users">—</div></div>
+        <div class="stat-card sc-green"><div class="stat-label">Total Interviews</div><div class="stat-value" id="admin-stat-interviews">—</div></div>
+        <div class="stat-card sc-purple"><div class="stat-label">Total Revenue</div><div class="stat-value" id="admin-stat-revenue">—</div></div>
       </div>
 
       <!-- User Table -->
@@ -1947,8 +1778,6 @@ print(trap([4,2,0,3,2,5]))               # Expected: 9
         <div class="flex-between mb-16">
           <div class="section-title" style="margin:0">User Management</div>
           <div class="flex gap-8">
-            <input type="text" class="form-input" placeholder="Search users…" style="width:200px">
-            <button class="btn btn-primary btn-sm">+ Add User</button>
           </div>
         </div>
         <div style="overflow-x:auto">
@@ -2299,6 +2128,11 @@ class APIClient {
     return this.request('GET', `/feedback/${interviewId}`);
   }
 
+  // AI CHAT
+  static async aiChat(messages) {
+    return this.request('POST', '/ai/chat', { messages });
+  }
+
   // RESUMES
   static async uploadResume(file) {
     const formData = new FormData();
@@ -2589,8 +2423,14 @@ function logout() {
   currentUser = null;
   localStorage.removeItem('authToken');
   localStorage.removeItem('currentUser');
+  notificationsData = [];
+  populateNotifications();
+  updateDashboardStats([]);
+  populateDashboardRecent([]);
+  populateRecordings([]);
   document.getElementById('landing-overlay').classList.add('show');
-  showPage('dashboard');
+  showPage('dashboard', true);
+  history.replaceState({ page: 'dashboard' }, '', '#dashboard');
 }
 
 /* ================================================================
@@ -2663,31 +2503,69 @@ function toggleAIState() {
 /* ================================================================
    CODING ROOM
 ================================================================ */
-function runCode() {
+async function submitCode() {
   const out = document.getElementById('output-console');
-  if (!out) return;
-  out.innerHTML = '<span style="color:var(--yellow)">⟳ Running test cases…</span>';
-  setTimeout(() => {
+  const editor = document.getElementById('code-editor');
+  const langSelect = document.getElementById('code-language-select');
+  if (!out || !editor) return;
+
+  if (!authToken) {
+    showAuth('login');
+    return;
+  }
+
+  if (!currentCodingQuestion) {
+    out.innerHTML = '<span style="color:var(--orange)">No question loaded. Go to Dashboard and click "New Interview" then choose Coding Room.</span>';
+    return;
+  }
+
+  out.innerHTML = '<span style="color:var(--yellow)">⟳ Submitting your solution…</span>';
+
+  try {
+    const submission = await APIClient.submitCodingSolution({
+      questionId: currentCodingQuestion.id,
+      language: langSelect ? langSelect.value : 'python',
+      sourceCode: editor.value,
+    });
+
     out.innerHTML =
-      '✓ Test 1 PASSED  Input: [0,1,0,2,1,0,1,3,2,1,2,1]  Expected: 6  Got: 6\n' +
-      '✗ Test 2 FAILED  Input: [4,2,0,3,2,5]              Expected: 9  Got: 7\n' +
-      '○ Test 3 SKIPPED  Input: [3,0,0,2,0,4]\n\n' +
-      'Runtime: 84ms  |  Memory: 14.2 MB  |  1/2 tests passed';
-    const lines = out.innerHTML.split('\n');
-    out.innerHTML = lines.map((l, i) => {
-      if (l.startsWith('✓')) return `<span style="color:var(--green)">${l}</span>`;
-      if (l.startsWith('✗')) return `<span style="color:var(--red)">${l}</span>`;
-      return `<span style="color:var(--text3)">${l}</span>`;
-    }).join('\n');
-  }, 900);
+      `<span style="color:var(--green)">✓ Submission saved</span>\n` +
+      `Submission ID: ${escHtml(submission.id)}\n` +
+      `Status: ${escHtml(submission.status)}\n\n` +
+      `<span style="color:var(--text3)">Your code has been queued for evaluation. Automated code execution and test results are not yet enabled on this backend — your submission is recorded for review.</span>`;
+  } catch (error) {
+    out.innerHTML = `<span style="color:var(--red)">✗ Submission failed: ${escHtml(error.message)}</span>`;
+  }
 }
-function showHint() {
+
+async function showHint() {
   const h = document.getElementById('hint-area');
   if (!h) return;
-  h.innerHTML =
-    '<div style="background:rgba(79,142,247,.09);border:1px solid rgba(79,142,247,.25);border-radius:9px;padding:12px 14px;font-size:12.5px;color:var(--text2);line-height:1.65">' +
-    '<strong style="color:var(--blue)">💡 Hint 1:</strong> Use the two-pointer approach. Maintain a <code style="background:var(--bg4);padding:1px 5px;border-radius:3px;font-family:\'JetBrains Mono\',monospace">left_max</code> and <code style="background:var(--bg4);padding:1px 5px;border-radius:3px;font-family:\'JetBrains Mono\',monospace">right_max</code> as you converge the pointers. Water at position i = <code style="background:var(--bg4);padding:1px 5px;border-radius:3px;font-family:\'JetBrains Mono\',monospace">min(left_max, right_max) - height[i]</code>.' +
-    '</div>';
+
+  if (!currentCodingQuestion) {
+    h.innerHTML = '<div class="text-xs">Load a coding question first to get hints.</div>';
+    return;
+  }
+
+  h.innerHTML = '<div class="text-xs">⟳ Asking AI for a hint…</div>';
+
+  try {
+    // Use the interview question-generation endpoint creatively isn't ideal;
+    // instead show the question's own hints if the backend provides them.
+    const hints = currentCodingQuestion.hints || currentCodingQuestion.hint;
+    if (hints) {
+      const list = Array.isArray(hints) ? hints : [hints];
+      h.innerHTML = list.map(hint =>
+        `<div style="background:rgba(79,142,247,.09);border:1px solid rgba(79,142,247,.25);border-radius:9px;padding:12px 14px;font-size:12.5px;color:var(--text2);line-height:1.65;margin-bottom:8px">
+          <strong style="color:var(--blue)">💡 Hint:</strong> ${escHtml(hint)}
+        </div>`
+      ).join('');
+    } else {
+      h.innerHTML = '<div class="text-xs">No hints available for this question.</div>';
+    }
+  } catch (error) {
+    h.innerHTML = `<div class="text-xs">Failed to load hint: ${escHtml(error.message)}</div>`;
+  }
 }
 
 /* ================================================================
@@ -2925,54 +2803,99 @@ function handlePhotoUpload(event) {
   reader.readAsDataURL(file);
 }
 
+let currentCodingQuestion = null;
+
 async function startCodingInterview() {
   if (!authToken) {
     showAuth('login');
     return;
   }
-  
+
   try {
-    // Fetch a coding question
-    const response = await APIClient.getCodingQuestions(1);
-    const question = response.data?.[0] || { slug: 'sample', title: 'Sample Problem' };
-    
+    const questions = await APIClient.getCodingQuestions(1);
+    const list = Array.isArray(questions) ? questions : (questions.data || []);
+    if (list.length === 0) {
+      alert('No coding questions available yet.');
+      return;
+    }
+    const question = list[0];
     showPage('coding');
-    initializeCodingRoom(question.slug);
+    await initializeCodingRoom(question.slug);
   } catch (error) {
     alert('Failed to start coding interview: ' + error.message);
-    showPage('coding');
   }
 }
 
-function initializeCodingRoom(questionSlug) {
-  // Could load question details here
-  console.log('Initialized coding room with question:', questionSlug);
+async function initializeCodingRoom(questionSlug) {
+  try {
+    const question = await APIClient.getCodingQuestion(questionSlug);
+    currentCodingQuestion = question;
+
+    const titleEl = document.querySelector('#page-coding .problem-title, #page-coding .section-title');
+    if (titleEl) titleEl.textContent = question.title || 'Coding Problem';
+
+    const descEl = document.getElementById('coding-problem-description');
+    if (descEl) descEl.innerHTML = (question.description || '').replace(/\n/g, '<br>');
+
+    const editor = document.getElementById('code-editor');
+    if (editor) editor.value = question.starterCode || `# Write your solution for "${question.title}" here\n`;
+
+    const testCasesEl = document.getElementById('coding-test-cases');
+    if (testCasesEl && Array.isArray(question.testCases)) {
+      testCasesEl.innerHTML = question.testCases.map(tc =>
+        `<div class="test-case">Input: ${escHtml(JSON.stringify(tc.input))}<br>Expected: ${escHtml(JSON.stringify(tc.expectedOutput))}</div>`
+      ).join('') || '<div class="text-xs">No visible test cases.</div>';
+    }
+
+    const out = document.getElementById('output-console');
+    if (out) out.textContent = 'Ready. Click Submit Solution to send your code for evaluation.';
+  } catch (error) {
+    console.error('Failed to load coding question:', error);
+  }
 }
 
 /* ================================================================
    PREP HUB CHAT
 ================================================================ */
-const aiReplies = [
-  'Great question! Can you elaborate on the trade-offs you would consider?',
-  'Tell me more — how would you handle edge cases in that approach?',
-  'Interesting! What is the time and space complexity of your solution?',
-  'Solid answer. How would you scale this to handle 10× the load?',
-  'Walk me through your thought process step by step.',
-  'That\'s a good start. Have you considered using a different data structure here?',
-];
-function sendChat() {
+let prepChatHistory = [];
+
+async function sendChat() {
   const inp = document.getElementById('chat-input');
   const msgs = document.getElementById('chat-messages');
   if (!inp || !msgs || !inp.value.trim()) return;
+
+  if (!authToken) {
+    showAuth('login');
+    return;
+  }
+
   const userMsg = inp.value.trim();
   inp.value = '';
   msgs.innerHTML += `<div style="margin-top:11px"><span style="color:var(--purple);font-weight:700">You: </span><span style="color:var(--text1)">${escHtml(userMsg)}</span></div>`;
   msgs.scrollTop = msgs.scrollHeight;
-  setTimeout(() => {
-    const reply = aiReplies[Math.floor(Math.random() * aiReplies.length)];
-    msgs.innerHTML += `<div style="margin-top:8px"><span style="color:var(--blue);font-weight:700">AI: </span><span style="color:var(--text2)">${reply}</span></div>`;
-    msgs.scrollTop = msgs.scrollHeight;
-  }, 650);
+
+  prepChatHistory.push({ role: 'user', content: userMsg });
+
+  const loadingId = 'chat-loading-' + Date.now();
+  msgs.innerHTML += `<div id="${loadingId}" style="margin-top:8px"><span style="color:var(--blue);font-weight:700">AI: </span><span style="color:var(--text3)">⟳ thinking…</span></div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const response = await APIClient.aiChat(prepChatHistory);
+    const reply = response.reply || 'No response received.';
+    prepChatHistory.push({ role: 'assistant', content: reply });
+
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) {
+      loadingEl.innerHTML = `<span style="color:var(--blue);font-weight:700">AI: </span><span style="color:var(--text2)">${escHtml(reply)}</span>`;
+    }
+  } catch (error) {
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) {
+      loadingEl.innerHTML = `<span style="color:var(--red);font-weight:700">Error: </span><span style="color:var(--text2)">${escHtml(error.message)}</span>`;
+    }
+  }
+  msgs.scrollTop = msgs.scrollHeight;
 }
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -3003,6 +2926,10 @@ async function loadDashboardData() {
     populateDashboardRecent(interviews);
     populateRecordings(interviews);
     updateDashboardStats(interviews);
+    populateAnalyticsSelector(interviews);
+    loadNotifications();
+    populateAdminUsers();
+    loadBillingInfo();
   } catch (error) {
     console.error('Failed to load dashboard:', error);
     // Fall back to empty state
@@ -3112,6 +3039,217 @@ function updateProfileHeader(user) {
   if (planEl) planEl.textContent = '✦ ' + (user.subscription?.plan || user.plan || 'Free') + ' Plan';
 }
 
+/* ================================================================
+   BILLING / PRICING
+================================================================ */
+async function upgradePlan(planCode) {
+  if (!authToken) {
+    showAuth('login');
+    return;
+  }
+  try {
+    const plans = await APIClient.request('GET', '/payments/plans');
+    const plan = (Array.isArray(plans) ? plans : []).find(p => p.code === planCode);
+    if (!plan) {
+      alert(`The "${planCode}" plan isn't configured on this server yet. Ask the site admin to add it to the subscription_plans table.`);
+      return;
+    }
+    const result = await APIClient.request('POST', '/payments/checkout', { planId: plan.id, provider: 'STRIPE' });
+    if (result.checkoutUrl) {
+      window.location.href = result.checkoutUrl;
+    } else {
+      alert(result.note || 'Checkout initiated, but no payment provider is configured yet.');
+    }
+  } catch (error) {
+    alert('Checkout failed: ' + error.message);
+  }
+}
+
+async function loadBillingInfo() {
+  if (!authToken) return;
+  try {
+    const history = await APIClient.request('GET', '/payments/billing-history');
+    const list = Array.isArray(history) ? history : [];
+
+    const planBadge = document.getElementById('billing-plan-badge');
+    const renewInfo = document.getElementById('billing-renew-info');
+    const plan = currentUser?.subscription?.plan?.name || 'Free';
+    if (planBadge) {
+      planBadge.textContent = plan;
+      planBadge.className = 'badge ' + (plan === 'Free' ? 'badge-gray' : 'badge-blue');
+    }
+    if (renewInfo) renewInfo.textContent = plan === 'Free' ? 'Free plan' : `${plan} plan`;
+
+    const historyEl = document.getElementById('billing-history-content');
+    if (historyEl) {
+      if (list.length === 0) {
+        historyEl.innerHTML = '<div class="text-xs">No billing history yet.</div>';
+      } else {
+        historyEl.innerHTML = list.map(p =>
+          `<div class="flex-between text-sm mb-8"><span>${new Date(p.createdAt).toLocaleDateString()}</span><span style="font-weight:700;color:var(--text1)">${(p.amountCents / 100).toFixed(2)} ${p.currency || ''}</span></div>`
+        ).join('');
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load billing info:', error);
+  }
+}
+let allInterviews = [];
+
+function populateAnalyticsSelector(interviews = []) {
+  allInterviews = interviews;
+  const completed = interviews.filter(i => i.status === 'COMPLETED');
+  const select = document.getElementById('analytics-interview-select');
+  if (!select) return;
+
+  if (completed.length === 0) {
+    select.style.display = 'none';
+    document.getElementById('analytics-subtitle').textContent = 'No completed interviews yet';
+    document.getElementById('analytics-content').innerHTML = `
+      <div class="card" style="text-align:center;padding:40px 20px">
+        <div style="font-size:40px;margin-bottom:10px">📊</div>
+        <div style="font-weight:700;margin-bottom:6px">No completed interviews yet</div>
+        <div class="text-xs">Complete an interview to generate your performance report.</div>
+      </div>`;
+    return;
+  }
+
+  select.style.display = '';
+  select.innerHTML = completed.map(i =>
+    `<option value="${i.id}">${escHtml(i.title || 'Interview')} · ${new Date(i.createdAt).toLocaleDateString()}</option>`
+  ).join('');
+
+  loadAnalyticsReport(completed[0].id);
+}
+
+async function loadAnalyticsReport(interviewId) {
+  if (!interviewId) return;
+  const contentEl = document.getElementById('analytics-content');
+  const subtitleEl = document.getElementById('analytics-subtitle');
+  if (!contentEl) return;
+
+  const interview = allInterviews.find(i => i.id === interviewId);
+  if (interview && subtitleEl) {
+    subtitleEl.textContent = `${interview.title || 'Interview'} · ${interview.type || ''} · ${new Date(interview.createdAt).toLocaleDateString()}`;
+  }
+
+  contentEl.innerHTML = '<div class="card" style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:8px">⏳</div>Loading report…</div>';
+
+  try {
+    let report = await APIClient.getFeedback(interviewId);
+
+    if (!report || report.notGenerated) {
+      // Try to generate it now
+      contentEl.innerHTML = '<div class="card" style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:8px">🧠</div>Generating your AI feedback report…</div>';
+      report = await APIClient.generateFeedback(interviewId);
+    }
+
+    renderAnalyticsReport(report);
+  } catch (error) {
+    contentEl.innerHTML = `
+      <div class="card" style="text-align:center;padding:40px 20px">
+        <div style="font-size:40px;margin-bottom:10px">⚠️</div>
+        <div style="font-weight:700;margin-bottom:6px">Couldn't load report</div>
+        <div class="text-xs">${escHtml(error.message)}</div>
+      </div>`;
+  }
+}
+
+function renderAnalyticsReport(report) {
+  const contentEl = document.getElementById('analytics-content');
+  if (!contentEl) return;
+
+  const c = Math.round(report.communicationScore ?? 0);
+  const t = Math.round(report.technicalScore ?? 0);
+  const conf = Math.round(report.confidenceScore ?? 0);
+  const g = Math.round(report.grammarScore ?? 0);
+  const b = Math.round(report.behavioralScore ?? 0);
+  const readiness = Math.round(report.readinessScore ?? ((c + t + conf + g + b) / 5));
+  const fillerWords = report.fillerWordCount ?? 0;
+
+  const strengths = report.strengths || [];
+  const weaknesses = report.weaknesses || [];
+  const suggestions = report.suggestions || [];
+
+  const scoreColor = (val) => val >= 80 ? 'var(--green)' : val >= 60 ? 'var(--blue)' : val >= 40 ? 'var(--orange)' : 'var(--red)';
+  const scoreBar = (val) => val >= 80 ? 'pb-green' : val >= 60 ? 'pb-blue' : val >= 40 ? 'pb-orange' : 'pb-orange';
+
+  contentEl.innerHTML = `
+    <div class="stats-grid mb-20">
+      <div class="stat-card sc-green">
+        <div class="stat-label">Overall Readiness</div>
+        <div class="stat-value text-gradient">${readiness}%</div>
+      </div>
+      <div class="stat-card sc-blue">
+        <div class="stat-label">Confidence</div>
+        <div class="stat-value">${conf}%</div>
+      </div>
+      <div class="stat-card sc-purple">
+        <div class="stat-label">Technical Accuracy</div>
+        <div class="stat-value">${t}%</div>
+      </div>
+      <div class="stat-card sc-orange">
+        <div class="stat-label">Filler Words</div>
+        <div class="stat-value">${fillerWords}</div>
+      </div>
+    </div>
+
+    <div class="analytics-grid">
+      <div class="card">
+        <div class="section-title">📊 Score Breakdown</div>
+        <div class="flex-col gap-12">
+          <div>
+            <div class="flex-between text-sm mb-4"><span>Communication</span><span style="color:${scoreColor(c)};font-weight:700">${c}%</span></div>
+            <div class="progress-bar"><div class="progress-fill ${scoreBar(c)}" style="width:${c}%"></div></div>
+          </div>
+          <div>
+            <div class="flex-between text-sm mb-4"><span>Technical Knowledge</span><span style="color:${scoreColor(t)};font-weight:700">${t}%</span></div>
+            <div class="progress-bar"><div class="progress-fill ${scoreBar(t)}" style="width:${t}%"></div></div>
+          </div>
+          <div>
+            <div class="flex-between text-sm mb-4"><span>Confidence</span><span style="color:${scoreColor(conf)};font-weight:700">${conf}%</span></div>
+            <div class="progress-bar"><div class="progress-fill ${scoreBar(conf)}" style="width:${conf}%"></div></div>
+          </div>
+          <div>
+            <div class="flex-between text-sm mb-4"><span>Grammar</span><span style="color:${scoreColor(g)};font-weight:700">${g}%</span></div>
+            <div class="progress-bar"><div class="progress-fill ${scoreBar(g)}" style="width:${g}%"></div></div>
+          </div>
+          <div>
+            <div class="flex-between text-sm mb-4"><span>Behavioral</span><span style="color:${scoreColor(b)};font-weight:700">${b}%</span></div>
+            <div class="progress-bar"><div class="progress-fill ${scoreBar(b)}" style="width:${b}%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🔍 AI Feedback</div>
+        ${strengths.map(s => `
+          <div class="observation-item" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2)">
+            <span>✅</span>
+            <div class="text-sm">${escHtml(s)}</div>
+          </div>`).join('')}
+        ${weaknesses.map(w => `
+          <div class="observation-item" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)">
+            <span>❌</span>
+            <div class="text-sm">${escHtml(w)}</div>
+          </div>`).join('')}
+        ${(strengths.length === 0 && weaknesses.length === 0) ? '<div class="text-xs" style="text-align:center;padding:20px">No detailed feedback available for this interview.</div>' : ''}
+      </div>
+
+      <div class="card">
+        <div class="section-title">🗺️ Suggestions</div>
+        ${suggestions.length > 0 ? suggestions.map((s, idx) => `
+          <div class="roadmap-item">
+            <div class="rm-dot" style="background:${['var(--red)','var(--orange)','var(--yellow)','var(--green)','var(--blue)'][idx % 5]}"></div>
+            <div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:2px">${escHtml(s)}</div>
+            </div>
+          </div>`).join('') : '<div class="text-xs" style="text-align:center;padding:20px">No suggestions available.</div>'}
+      </div>
+    </div>
+  `;
+}
+
 function populateDashboardRecent(interviews = []) {
   const data = interviews.slice(0, 4).map(i => {
     const r = i.report;
@@ -3146,6 +3284,17 @@ function populateDashboardRecent(interviews = []) {
 }
 
 function populateRecordings(interviews = []) {
+  const completedCount = interviews.filter(i => i.status === 'COMPLETED').length;
+  const navBadge = document.getElementById('nav-recordings-badge');
+  if (navBadge) {
+    if (completedCount > 0) {
+      navBadge.textContent = completedCount;
+      navBadge.style.display = '';
+    } else {
+      navBadge.style.display = 'none';
+    }
+  }
+
   const data = interviews.filter(i => i.status === 'COMPLETED').slice(0, 4).map(i => {
     const r = i.report;
     let score = null;
@@ -3196,23 +3345,55 @@ function populateRecordings(interviews = []) {
     : '<div class="text-xs" style="color:var(--text3);text-align:center;padding:20px">No recordings yet.</div>';
 }
 
-let notificationsData = [
-    { icon:'🎯', bg:'rgba(79,142,247,.15)', title:'Interview Reminder', body:'Your System Design mock with AI is scheduled for Today at 6:00 PM. Don\'t miss it!', time:'2 hours ago', unread:true },
-    { icon:'🏆', bg:'rgba(16,185,129,.15)', title:'Achievement Unlocked!', body:'You completed 10 interviews this month. Your consistency is really paying off — keep going!', time:'5 hours ago', unread:true },
-    { icon:'📊', bg:'rgba(139,92,246,.15)', title:'Weekly Performance Report', body:'Your average score improved by 8% this week. Communication skill is your top gainer (+12%).', time:'1 day ago', unread:true },
-    { icon:'💡', bg:'rgba(249,115,22,.15)', title:'New Practice Pack Available', body:'Google L5 SDE 2026 interview patterns have been added to the Prep Hub.', time:'2 days ago', unread:false },
-    { icon:'📄', bg:'rgba(6,182,212,.15)', title:'Resume Optimization Tip', body:'Based on your resume, adding quantifiable metrics to your Flipkart experience could increase ATS score by 23%.', time:'3 days ago', unread:false },
-];
+let notificationsData = [];
+
+async function loadNotifications() {
+  if (!authToken) {
+    notificationsData = [];
+    populateNotifications();
+    return;
+  }
+  try {
+    const list = await APIClient.request('GET', '/notifications');
+    const readIds = JSON.parse(localStorage.getItem('readNotificationIds') || '[]');
+    notificationsData = (Array.isArray(list) ? list : []).map(n => ({
+      id: n.id,
+      icon: notificationIcon(n.channel),
+      bg: 'rgba(79,142,247,.15)',
+      title: n.subject || 'Notification',
+      body: n.body,
+      time: new Date(n.createdAt).toLocaleString(),
+      unread: !readIds.includes(n.id),
+    }));
+  } catch (error) {
+    console.error('Failed to load notifications:', error);
+    notificationsData = [];
+  }
+  populateNotifications();
+}
+
+function notificationIcon(channel) {
+  const map = { EMAIL: '📧', PUSH: '🔔', SMS: '💬', IN_APP: '🔔' };
+  return map[channel] || '🔔';
+}
+
 function populateNotifications() {
   const data = notificationsData;
   const el = document.getElementById('notif-list');
   if (!el) return;
+
+  if (data.length === 0) {
+    el.innerHTML = '<div class="text-xs" style="text-align:center;padding:30px;color:var(--text3)">No notifications yet.</div>';
+    updateNotificationBadge();
+    return;
+  }
+
   el.innerHTML = data.map(d =>
     `<div class="notif-item">
       <div class="notif-icon" style="background:${d.bg}">${d.icon}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;font-weight:700;margin-bottom:3px">${d.title}</div>
-        <div class="text-sm" style="line-height:1.55">${d.body}</div>
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:3px">${escHtml(d.title)}</div>
+        <div class="text-sm" style="line-height:1.55">${escHtml(d.body)}</div>
         <div class="text-xs mt-6">${d.time}</div>
       </div>
       ${d.unread ? '<div class="unread-dot"></div>' : ''}
@@ -3224,49 +3405,95 @@ function updateNotificationBadge() {
   const unreadCount = notificationsData.filter(d => d.unread).length;
   const sub = document.querySelector('#page-notifications .page-sub');
   if (sub) sub.textContent = unreadCount + ' unread notification' + (unreadCount === 1 ? '' : 's');
-  // Update topbar bell badge/dot if present
-  document.querySelectorAll('.tb-btn[title="Notifications"] .badge-dot, .tb-btn[title="Notifications"] .unread-dot').forEach(el => {
+  const navBadge = document.getElementById('nav-notif-badge');
+  if (navBadge) {
+    if (unreadCount > 0) {
+      navBadge.textContent = unreadCount;
+      navBadge.style.display = '';
+    } else {
+      navBadge.style.display = 'none';
+    }
+  }
+  document.querySelectorAll('.tb-btn[title="Notifications"] .notif-dot').forEach(el => {
     el.style.display = unreadCount > 0 ? '' : 'none';
   });
 }
 function markAllNotificationsRead() {
+  const ids = notificationsData.map(d => d.id);
+  const existing = JSON.parse(localStorage.getItem('readNotificationIds') || '[]');
+  const merged = Array.from(new Set([...existing, ...ids]));
+  localStorage.setItem('readNotificationIds', JSON.stringify(merged));
   notificationsData = notificationsData.map(d => ({ ...d, unread: false }));
   populateNotifications();
 }
 
-function populateAdminUsers() {
-  const data = [
-    { name:'Priya Sharma', email:'priya@example.com', plan:'Pro', ints:32, score:87, status:'Active', joined:'Jan 2026' },
-    { name:'Rahul Gupta', email:'rahul@example.com', plan:'Free', ints:8, score:71, status:'Active', joined:'Mar 2026' },
-    { name:'Meera Patel', email:'meera@example.com', plan:'Enterprise', ints:56, score:93, status:'Active', joined:'Oct 2025' },
-    { name:'Vikram Singh', email:'vikram@example.com', plan:'Pro', ints:24, score:79, status:'Inactive', joined:'Feb 2026' },
-    { name:'Anjali Nair', email:'anjali@example.com', plan:'Free', ints:3, score:65, status:'Active', joined:'May 2026' },
-    { name:'Rohan Mehta', email:'rohan@example.com', plan:'Pro', ints:41, score:85, status:'Active', joined:'Dec 2025' },
-  ];
+async function populateAdminUsers() {
   const el = document.getElementById('admin-users-tbody');
   if (!el) return;
-  el.innerHTML = data.map(d => {
-    const planBadge = d.plan === 'Pro' ? 'badge-blue' : d.plan === 'Enterprise' ? 'badge-purple' : 'badge-gray';
-    const statusBadge = d.status === 'Active' ? 'badge-green' : 'badge-red';
-    const scoreColor = d.score >= 85 ? 'var(--green)' : d.score >= 70 ? 'var(--yellow)' : 'var(--red)';
-    return `<tr>
-      <td>
-        <div style="font-weight:700;color:var(--text1)">${d.name}</div>
-        <div class="text-xs">${d.email}</div>
-      </td>
-      <td><span class="badge ${planBadge}">${d.plan}</span></td>
-      <td>${d.ints}</td>
-      <td style="color:${scoreColor};font-weight:700">${d.score}%</td>
-      <td><span class="badge ${statusBadge}">${d.status}</span></td>
-      <td class="text-xs">${d.joined}</td>
-      <td>
-        <div style="display:flex;gap:5px">
-          <button class="btn btn-secondary btn-sm">Edit</button>
-          <button class="btn btn-danger btn-sm">Ban</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+
+  if (!authToken) {
+    el.innerHTML = '<tr><td colspan="7" class="text-xs" style="text-align:center;padding:30px">Log in to view admin data.</td></tr>';
+    return;
+  }
+
+  if (currentUser?.role !== 'ADMIN') {
+    el.innerHTML = '<tr><td colspan="7" class="text-xs" style="text-align:center;padding:30px">🔒 Admin access required. Your account role: ' + escHtml(currentUser?.role || 'USER') + '</td></tr>';
+    return;
+  }
+
+  // Load platform-wide stats
+  try {
+    const stats = await APIClient.request('GET', '/analytics/platform');
+    const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+    set('admin-stat-users', stats.users ?? '—');
+    set('admin-stat-interviews', stats.interviews ?? '—');
+    set('admin-stat-revenue', '₹' + ((stats.revenueCents ?? 0) / 100).toLocaleString());
+  } catch (error) {
+    console.error('Failed to load platform stats:', error);
+  }
+
+  try {
+    const users = await APIClient.request('GET', '/admin/users');
+    if (!Array.isArray(users) || users.length === 0) {
+      el.innerHTML = '<tr><td colspan="7" class="text-xs" style="text-align:center;padding:30px">No users found.</td></tr>';
+      return;
+    }
+    el.innerHTML = users.map(u => {
+      const plan = u.subscriptions?.[0]?.plan?.name || 'Free';
+      const planBadge = plan === 'Pro' ? 'badge-blue' : plan === 'Enterprise' ? 'badge-purple' : 'badge-gray';
+      const status = u.isEmailVerified ? 'Active' : 'Pending';
+      const statusBadge = status === 'Active' ? 'badge-green' : 'badge-gray';
+      const name = u.profile?.fullName || u.email;
+      const joined = new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      return `<tr>
+        <td>
+          <div style="font-weight:700;color:var(--text1)">${escHtml(name)}</div>
+          <div class="text-xs">${escHtml(u.email)}</div>
+        </td>
+        <td><span class="badge ${planBadge}">${escHtml(plan)}</span></td>
+        <td>—</td>
+        <td>—</td>
+        <td><span class="badge ${statusBadge}">${status}</span></td>
+        <td class="text-xs">${joined}</td>
+        <td>
+          <div style="display:flex;gap:5px">
+            <button class="btn btn-secondary btn-sm" onclick="promoteUser('${u.id}')">Promote</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (error) {
+    el.innerHTML = `<tr><td colspan="7" class="text-xs" style="text-align:center;padding:30px">Failed to load: ${escHtml(error.message)}</td></tr>`;
+  }
+}
+
+async function promoteUser(userId) {
+  try {
+    await APIClient.request('PATCH', `/admin/users/${userId}/promote`);
+    populateAdminUsers();
+  } catch (error) {
+    alert('Failed to promote user: ' + error.message);
+  }
 }
 
 /* ================================================================
