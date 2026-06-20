@@ -36,10 +36,6 @@ export class FeedbackService {
     });
   }
 
-  get(interviewId: string) {
-    return this.prisma.feedbackReport.findUniqueOrThrow({ where: { interviewId } });
-  }
-
   async getOrNull(interviewId: string) {
     return this.prisma.feedbackReport.findUnique({ where: { interviewId } });
   }

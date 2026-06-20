@@ -15,6 +15,6 @@ export class AiController {
 
   @Post('chat')
   chat(@Body() dto: ChatDto) {
-    return this.ai.chatReply(dto.messages ?? []);
+    return this.ai.generateChat(dto.messages ?? []);
   }
 }

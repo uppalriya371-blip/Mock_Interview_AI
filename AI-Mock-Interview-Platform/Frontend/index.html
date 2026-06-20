@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>InterviewAI — AI-Powered Mock Interview Platform</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js" onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js';"></script>
+<script src="https://unpkg.com/socket.io-client@4.7.5/dist/socket.io.min.js"></script>
 <style>
 /* ===== RESET & ROOT ===== */
 *{margin:0;padding:0;box-sizing:border-box}
@@ -961,9 +961,6 @@ body{
       <span class="ni">📚</span> Prep Hub
     </div>
     <div class="nav-section">Account</div>
-    <div class="nav-item" data-page="pricing">
-      <span class="ni">💎</span> Pricing
-    </div>
     <div class="nav-item" data-page="notifications">
       <span class="ni">🔔</span> Notifications <span class="nav-badge red" id="nav-notif-badge" style="display:none">0</span>
     </div>
@@ -1270,13 +1267,13 @@ body{
         <div class="room-header">
           <div class="ai-face" style="width:38px;height:38px;font-size:18px;border-width:2px;animation:none">🤖</div>
           <div>
-            <div style="font-size:13.5px;font-weight:700">Amazon · Senior SDE · System Design</div>
-            <div class="text-xs">Round 2 of 3 · Medium Difficulty</div>
+            <div style="font-size:13.5px;font-weight:700" id="room-title">Interview</div>
+            <div class="text-xs" id="room-subtitle-info">Loading…</div>
           </div>
           <div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span class="badge badge-green"><span style="width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;margin-right:3px"></span>Live</span>
             <button class="btn btn-secondary btn-sm" onclick="showPage('dashboard')">← Exit</button>
-            <button class="btn btn-danger btn-sm" onclick="showPage('analytics')">End Interview</button>
+            <button class="btn btn-danger btn-sm" onclick="endInterview()">End Interview</button>
           </div>
         </div>
 
@@ -1324,30 +1321,31 @@ body{
 
             <!-- Subtitles -->
             <div class="subtitle-box" id="subtitle-box">
-              <span style="color:var(--blue);font-weight:700">Alex: </span>
-              <span id="subtitle-text">"Can you walk me through how you would design a distributed cache system like Redis that can handle 1 million requests per second? Let's start with the high-level architecture and then dive into the data structures you'd use."</span><span class="cursor-blink">|</span>
+              <span style="color:var(--blue);font-weight:700">AI: </span>
+              <span id="subtitle-text">Connecting to interview…</span><span class="cursor-blink">|</span>
+            </div>
+
+            <!-- Answer Input -->
+            <div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">
+              <textarea id="answer-input" class="form-textarea" placeholder="Type your answer here, then press Send…" style="flex:1;min-height:60px;font-size:13px" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendInterviewAnswer();}"></textarea>
+              <button class="btn btn-primary" style="align-self:flex-end" onclick="sendInterviewAnswer()">Send</button>
             </div>
 
             <!-- Controls -->
             <div class="room-controls">
               <div class="ctrl-btn ctrl-active" id="mic-btn" onclick="toggleMic()" title="Mute/Unmute">🎙️</div>
               <div class="ctrl-btn ctrl-muted" id="cam-btn" onclick="toggleCam()" title="Camera On/Off">📷</div>
-              <div class="ctrl-btn ctrl-active" title="Screen Share">🖥️</div>
-              <div class="ctrl-btn ctrl-active" title="Notes">📝</div>
-              <div class="ctrl-btn ctrl-active" title="Settings">⚙️</div>
-              <div class="ctrl-btn ctrl-end" onclick="showPage('analytics')" title="End Interview">📞</div>
+              <div class="ctrl-btn ctrl-end" onclick="endInterview()" title="End Interview">📞</div>
             </div>
           </div>
 
           <!-- Sidebar Panel -->
           <div class="room-sidebar">
             <div class="questions-panel">
-              <div class="q-header">Question Progress (2 / 5)</div>
-              <div class="q-item done">1. Tell me about yourself and your experience with distributed systems.</div>
-              <div class="q-item current">2. Design a distributed cache system handling 1M req/s. <span class="badge badge-blue" style="font-size:10px;margin-top:4px">Current</span></div>
-              <div class="q-item">3. How would you handle cache invalidation strategies?</div>
-              <div class="q-item">4. Explain CAP theorem with a real-world example.</div>
-              <div class="q-item">5. What questions do you have for us?</div>
+              <div class="q-header">Conversation</div>
+              <div id="interview-transcript" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto">
+                <div class="text-xs">Waiting for the interview to begin…</div>
+              </div>
 
               <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
                 <div class="q-header">AI State</div>
@@ -1355,17 +1353,13 @@ body{
                   <div class="thinking-dots" id="thinking-dots" style="display:none">
                     <div class="td-dot"></div><div class="td-dot"></div><div class="td-dot"></div>
                   </div>
-                  <span class="text-xs" id="ai-state-text">🎙️ Speaking…</span>
+                  <span class="text-xs" id="ai-state-text">⏳ Connecting…</span>
                 </div>
               </div>
 
               <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
                 <div class="q-header">Quick Notes</div>
-                <textarea class="form-textarea" placeholder="Type your notes here…" style="font-size:12px;min-height:110px;background:var(--bg3)"></textarea>
-              </div>
-
-              <div style="padding:12px 0;margin-top:8px">
-                <button class="btn btn-secondary btn-sm btn-block" onclick="toggleAIState()">Toggle AI Thinking…</button>
+                <textarea class="form-textarea" id="interview-notes" placeholder="Type your notes here…" style="font-size:12px;min-height:110px;background:var(--bg3)"></textarea>
               </div>
             </div>
           </div>
@@ -1497,61 +1491,41 @@ body{
         <div id="resume-parsed" style="display:none;margin-top:22px">
           <div style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.22);border-radius:10px;margin-bottom:18px">
             <span>✅</span>
-            <span style="font-size:13px;font-weight:700">Resume parsed successfully — 98% confidence · <span style="color:var(--text3)">Arjun_Kumar_Resume.pdf</span></span>
+            <span style="font-size:13px;font-weight:700">Resume uploaded — <span style="color:var(--text3)" id="resume-filename">file.pdf</span></span>
           </div>
 
-          <div class="card mb-14">
-            <div class="section-title">👤 Personal Info</div>
-            <div class="grid-2" style="font-size:13px;color:var(--text2);gap:8px">
-              <div><strong style="color:var(--text1)">Name:</strong> Arjun Kumar</div>
-              <div><strong style="color:var(--text1)">Email:</strong> arjun@example.com</div>
-              <div><strong style="color:var(--text1)">Experience:</strong> 4 years</div>
-              <div><strong style="color:var(--text1)">Location:</strong> Vadodara, Gujarat</div>
-            </div>
+          <div class="card mb-14" id="resume-personal-info-card" style="display:none">
+            <div class="section-title">👤 Detected Info</div>
+            <div class="grid-2" style="font-size:13px;color:var(--text2);gap:8px" id="resume-personal-info"></div>
           </div>
 
           <div class="card mb-14">
             <div class="section-title">🛠️ Extracted Skills</div>
-            <div class="extracted-tags">
-              <span class="tag">⚛️ React</span><span class="tag">🐍 Python</span>
-              <span class="tag">🟢 Node.js</span><span class="tag">🐘 PostgreSQL</span>
-              <span class="tag">🐳 Docker</span><span class="tag">☁️ AWS</span>
-              <span class="tag">🔄 Redis</span><span class="tag">📦 Kafka</span>
-              <span class="tag">🟦 TypeScript</span><span class="tag">🔷 GraphQL</span>
+            <div class="extracted-tags" id="resume-skills-tags">
+              <span class="text-xs">Upload a resume to extract skills.</span>
             </div>
           </div>
 
           <div class="card mb-14">
             <div class="section-title">💼 Work Experience</div>
-            <div class="flex-col gap-10">
-              <div style="padding:12px 14px;background:var(--bg3);border-radius:9px;border-left:3px solid var(--blue)">
-                <div style="font-size:13.5px;font-weight:700">Software Engineer II · Flipkart</div>
-                <div class="text-xs mt-4">2022 – Present · Bengaluru, Karnataka</div>
-                <div class="text-sm mt-8">Built high-throughput payment microservices handling 2M txns/day; reduced latency by 40% via Redis caching</div>
-              </div>
-              <div style="padding:12px 14px;background:var(--bg3);border-radius:9px;border-left:3px solid var(--purple)">
-                <div style="font-size:13.5px;font-weight:700">SDE I · Paytm</div>
-                <div class="text-xs mt-4">2020 – 2022 · Noida, UP</div>
-                <div class="text-sm mt-8">React Native mobile app dev, push notification system serving 10M users, A/B testing framework</div>
-              </div>
+            <div class="flex-col gap-10" id="resume-experience-list">
+              <div class="text-xs">Upload a resume to see extracted experience.</div>
             </div>
           </div>
 
           <div class="card mb-14">
             <div class="section-title">🎓 Education</div>
-            <div style="padding:12px 14px;background:var(--bg3);border-radius:9px;border-left:3px solid var(--green)">
-              <div style="font-size:13.5px;font-weight:700">B.Tech Computer Science & Engineering</div>
-              <div class="text-xs mt-4">NIT Surat · 2016–2020 · CGPA: 8.4 / 10</div>
+            <div id="resume-education-list">
+              <div class="text-xs">Upload a resume to see extracted education.</div>
             </div>
           </div>
 
           <div class="card mb-20">
             <div class="section-title">💡 AI-Generated Questions from Resume</div>
-            <div class="flex-col gap-8">
-              <div style="padding:10px 13px;background:var(--bg3);border-radius:8px;font-size:12.5px;color:var(--text2);border:1px solid var(--border)">1. Walk me through how you reduced payment service latency by 40% using Redis. What specific caching strategy did you use?</div>
-              <div style="padding:10px 13px;background:var(--bg3);border-radius:8px;font-size:12.5px;color:var(--text2);border:1px solid var(--border)">2. How did you handle data consistency between your PostgreSQL database and Redis cache in the payment microservice?</div>
-              <div style="padding:10px 13px;background:var(--bg3);border-radius:8px;font-size:12.5px;color:var(--text2);border:1px solid var(--border)">3. Describe the architecture of the Kafka-based event system you built. How did you handle message ordering?</div>
+            <div class="flex-col gap-8" id="resume-questions-list">
+              <div class="text-xs">Click "Generate Questions" after upload to get personalized questions.</div>
             </div>
+            <button class="btn btn-secondary btn-sm mt-12" id="resume-gen-questions-btn" onclick="generateResumeQuestions()" style="display:none">🔄 Generate Questions</button>
           </div>
 
           <button class="btn btn-primary btn-lg" onclick="showPage('setup')">🎯 Start Interview Based on Resume</button>
@@ -1566,11 +1540,7 @@ body{
       <div class="flex-between mb-20" style="flex-wrap:wrap;gap:12px">
         <div>
           <div class="page-title">🎬 Interview Recordings</div>
-          <div class="page-sub">Review past sessions with AI-timestamped feedback annotations</div>
-        </div>
-        <div class="flex gap-8">
-          <button class="btn btn-secondary btn-sm">Filter ▾</button>
-          <button class="btn btn-secondary btn-sm">Sort: Newest ▾</button>
+          <div class="page-sub">Review your completed interview sessions</div>
         </div>
       </div>
       <div id="recordings-list"></div>
@@ -1625,60 +1595,6 @@ body{
     </section>
 
     <!-- ============================================================ -->
-    <!-- PAGE: PRICING                                                -->
-    <!-- ============================================================ -->
-    <section class="page" id="page-pricing">
-      <div style="text-align:center;margin-bottom:40px">
-        <div class="section-eyebrow">PRICING PLANS</div>
-        <div style="font-size:32px;font-weight:900;margin-bottom:10px">Choose Your Plan</div>
-        <div style="font-size:15px;color:var(--text3)">Start free, upgrade when you're ready. Cancel anytime.</div>
-      </div>
-      <div class="pricing-grid" style="margin:0 auto">
-        <div class="price-card">
-          <div class="price-name">Free</div>
-          <div class="price-amount">₹0</div>
-          <div class="price-per">forever · no credit card needed</div>
-          <ul class="price-features">
-            <li>3 mock interviews / month</li>
-            <li>Basic AI feedback report</li>
-            <li>5 coding problems</li>
-            <li>HR question bank</li>
-          </ul>
-          <button class="btn btn-secondary btn-block" id="plan-free-btn" disabled>Current Plan</button>
-        </div>
-        <div class="price-card featured">
-          <div class="price-name">Pro</div>
-          <div class="price-amount">₹599</div>
-          <div class="price-per">per month · billed monthly</div>
-          <ul class="price-features">
-            <li>Unlimited mock interviews</li>
-            <li>Full analytics suite (20+ metrics)</li>
-            <li>Resume AI parsing & questions</li>
-            <li>Eye contact & speech analysis</li>
-            <li>Full recording playback</li>
-            <li>Company-specific prep packs</li>
-            <li>Priority support</li>
-          </ul>
-          <button class="btn btn-primary btn-block" onclick="upgradePlan('PRO')">Upgrade to Pro →</button>
-        </div>
-        <div class="price-card">
-          <div class="price-name">Enterprise</div>
-          <div class="price-amount">₹2,999</div>
-          <div class="price-per">per month · up to 20 seats</div>
-          <ul class="price-features">
-            <li>Everything in Pro</li>
-            <li>Team dashboard & analytics</li>
-            <li>Custom AI interviewer persona</li>
-            <li>Bulk interview credits</li>
-            <li>Dedicated account manager</li>
-            <li>API access & webhooks</li>
-          </ul>
-          <button class="btn btn-secondary btn-block" onclick="upgradePlan('ENTERPRISE')">Contact Sales</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================ -->
     <!-- PAGE: PROFILE SETTINGS                                       -->
     <!-- ============================================================ -->
     <section class="page" id="page-profile">
@@ -1701,63 +1617,48 @@ body{
         <div class="tab active" onclick="switchTab(this,'profile-personal','profile-tab-list')">Personal Info</div>
         <div class="tab" onclick="switchTab(this,'profile-preferences','profile-tab-list')">Preferences</div>
         <div class="tab" onclick="switchTab(this,'profile-security','profile-tab-list')">Security</div>
-        <div class="tab" onclick="switchTab(this,'profile-billing','profile-tab-list')">Billing</div>
       </div>
 
       <div class="tab-content active" id="profile-personal">
         <div class="card" style="max-width:620px">
           <div class="grid-2">
-            <div class="form-group"><label class="form-label">First Name</label><input type="text" class="form-input" value="Arjun"></div>
-            <div class="form-group"><label class="form-label">Last Name</label><input type="text" class="form-input" value="Kumar"></div>
-            <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" value="arjun@example.com"></div>
-            <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-input" value="+91 98765 43210"></div>
-            <div class="form-group"><label class="form-label">Current Role</label><input type="text" class="form-input" value="Full Stack Developer"></div>
-            <div class="form-group"><label class="form-label">Target Role</label><input type="text" class="form-input" value="Senior SDE at FAANG"></div>
+            <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="profile-input-fullname"></div>
+            <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="profile-input-email" disabled></div>
+            <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-input" id="profile-input-phone"></div>
+            <div class="form-group"><label class="form-label">Country</label><input type="text" class="form-input" id="profile-input-country"></div>
+            <div class="form-group"><label class="form-label">Current Company</label><input type="text" class="form-input" id="profile-input-company"></div>
+            <div class="form-group"><label class="form-label">Target Role</label><input type="text" class="form-input" id="profile-input-targetrole"></div>
+            <div class="form-group"><label class="form-label">Headline</label><input type="text" class="form-input" id="profile-input-headline" placeholder="e.g. Full Stack Developer"></div>
+            <div class="form-group"><label class="form-label">Years of Experience</label><input type="number" class="form-input" id="profile-input-experience" min="0" step="0.5"></div>
           </div>
           <div class="form-group">
             <label class="form-label">Bio</label>
-            <textarea class="form-textarea">Passionate developer with 4 years of experience building scalable distributed systems. Targeting FAANG Senior SDE roles in 2026. Strong in Python, React, and cloud-native architecture.</textarea>
+            <textarea class="form-textarea" id="profile-input-bio" placeholder="Tell us about yourself…"></textarea>
           </div>
-          <button class="btn btn-primary">Save Changes</button>
+          <button class="btn btn-primary" id="profile-save-btn" onclick="saveProfile()">Save Changes</button>
+          <span class="text-xs" id="profile-save-status" style="margin-left:10px"></span>
         </div>
       </div>
 
       <div class="tab-content" id="profile-preferences">
         <div class="card" style="max-width:620px">
-          <div class="form-group"><label class="form-label">Preferred Interview Type</label><select class="form-select"><option>Technical</option><option>HR</option><option>Mixed</option><option>System Design</option></select></div>
-          <div class="form-group"><label class="form-label">Target Companies</label><input type="text" class="form-input" value="Google, Amazon, Microsoft"></div>
-          <div class="form-group"><label class="form-label">Weekly Practice Goal (sessions)</label><input type="number" class="form-input" value="5" min="1" max="30"></div>
-          <div class="form-group"><label class="form-label">Default Difficulty</label><select class="form-select"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
-          <div class="form-group"><label class="form-label">Email Notifications</label><select class="form-select"><option selected>All notifications</option><option>Important only</option><option>None</option></select></div>
-          <button class="btn btn-primary">Save Preferences</button>
+          <div class="form-group"><label class="form-label">Target Companies (comma-separated)</label><input type="text" class="form-input" id="profile-input-targetcompanies" placeholder="e.g. Google, Amazon, Microsoft"></div>
+          <button class="btn btn-primary" onclick="saveProfile()">Save Preferences</button>
+          <span class="text-xs" id="profile-save-status-2" style="margin-left:10px"></span>
         </div>
       </div>
 
       <div class="tab-content" id="profile-security">
         <div class="card" style="max-width:480px">
-          <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" placeholder="••••••••"></div>
-          <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" placeholder="••••••••"></div>
-          <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" class="form-input" placeholder="••••••••"></div>
-          <button class="btn btn-primary mb-16">Update Password</button>
-          <div class="divider">Two-Factor Authentication</div>
-          <button class="btn btn-secondary btn-block">Enable 2FA via Authenticator App</button>
+          <div class="text-xs mb-16">For security, password changes are done via an emailed reset link. Click below to send a reset link to your account email.</div>
+          <button class="btn btn-primary" id="reset-password-btn" onclick="requestPasswordReset()">Send Password Reset Link</button>
+          <span class="text-xs" id="reset-password-status" style="margin-left:10px"></span>
+
+          <div class="divider mt-20">Active Sessions</div>
+          <button class="btn btn-danger btn-block" onclick="logoutAllSessions()">Log Out of All Devices</button>
         </div>
       </div>
 
-      <div class="tab-content" id="profile-billing">
-        <div class="card" style="max-width:520px">
-          <div class="flex-between mb-16">
-            <div><div style="font-size:14px;font-weight:700">Current Plan</div><div class="text-xs mt-4" id="billing-renew-info">Free plan</div></div>
-            <span class="badge badge-gray" id="billing-plan-badge">Free</span>
-          </div>
-          <div id="billing-history-content" style="background:var(--bg3);border-radius:10px;padding:16px;border:1px solid var(--border);margin-bottom:16px">
-            <div class="text-xs">No billing history yet.</div>
-          </div>
-          <div class="flex gap-8">
-            <button class="btn btn-primary" onclick="showPage('pricing')">View Plans</button>
-          </div>
-        </div>
-      </div>
     </section>
 
     <!-- ============================================================ -->
@@ -1788,51 +1689,6 @@ body{
         </div>
       </div>
 
-      <div class="grid-2">
-        <!-- AI Model Controls -->
-        <div class="card">
-          <div class="section-title">🤖 AI Model Controls</div>
-          <div class="flex-col gap-14">
-            <div class="flex-between"><span class="text-sm">Interview Q Generation</span><span class="badge badge-green">claude-sonnet-4-6</span></div>
-            <div class="flex-between"><span class="text-sm">Feedback Analysis</span><span class="badge badge-blue">claude-opus-4-6</span></div>
-            <div class="flex-between"><span class="text-sm">Speech-to-Text</span><span class="badge badge-purple">Whisper v3 Large</span></div>
-            <div class="flex-between"><span class="text-sm">Emotion Detection</span><span class="badge badge-cyan">Custom CV Model v2</span></div>
-            <div class="flex-between"><span class="text-sm">System Status</span><span class="badge badge-green">● All Operational</span></div>
-            <div class="divider">Controls</div>
-            <div class="flex gap-8" style="flex-wrap:wrap">
-              <button class="btn btn-secondary btn-sm">🔄 Refresh Models</button>
-              <button class="btn btn-secondary btn-sm">📊 API Usage</button>
-              <button class="btn btn-danger btn-sm">🚨 Maintenance Mode</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Usage Chart -->
-        <div class="card">
-          <div class="section-title">📊 Interview Activity (7 days)</div>
-          <div class="chart-bar" style="height:100px">
-            <div class="bar" style="height:52%"></div>
-            <div class="bar" style="height:68%"></div>
-            <div class="bar" style="height:61%"></div>
-            <div class="bar" style="height:84%"></div>
-            <div class="bar active" style="height:96%"></div>
-            <div class="bar" style="height:76%"></div>
-            <div class="bar" style="height:88%"></div>
-          </div>
-          <div class="flex-between mt-8">
-            <span class="text-xs">Mon</span><span class="text-xs">Tue</span>
-            <span class="text-xs">Wed</span><span class="text-xs">Thu</span>
-            <span class="text-xs">Fri</span><span class="text-xs">Sat</span>
-            <span class="text-xs">Sun</span>
-          </div>
-          <div class="divider mt-16">Content Management</div>
-          <div class="flex gap-8" style="flex-wrap:wrap">
-            <button class="btn btn-secondary btn-sm">📝 Add Questions</button>
-            <button class="btn btn-secondary btn-sm">🏢 Company Packs</button>
-            <button class="btn btn-secondary btn-sm">📧 Send Digest</button>
-          </div>
-        </div>
-      </div>
     </section>
 
   </main><!-- /content-area -->
@@ -1849,8 +1705,6 @@ body{
     </div>
     <div class="landing-nav-links">
       <a href="#" onclick="event.preventDefault();document.querySelector('#landing-features').scrollIntoView({behavior:'smooth'})">Features</a>
-      <a href="#" onclick="event.preventDefault();document.querySelector('#landing-pricing').scrollIntoView({behavior:'smooth'})">Pricing</a>
-      <a href="#" onclick="event.preventDefault()">Blog</a>
       <button class="btn btn-secondary btn-sm" onclick="showAuth('login')">Sign In</button>
       <button class="btn btn-primary btn-sm" onclick="showAuth('signup')">Get Started Free</button>
     </div>
@@ -1938,51 +1792,6 @@ body{
     </div>
   </div>
 
-  <!-- Pricing -->
-  <div class="pricing-section-landing" id="landing-pricing">
-    <div class="section-eyebrow">PRICING</div>
-    <h2 class="section-h2">Simple, transparent pricing</h2>
-    <p class="section-sub" style="margin:0 auto 48px">No hidden fees. Upgrade or cancel anytime.</p>
-    <div class="pricing-grid" style="margin:0 auto;text-align:left">
-      <div class="price-card">
-        <div class="price-name">Free</div>
-        <div class="price-amount">₹0</div>
-        <div class="price-per">forever</div>
-        <ul class="price-features">
-          <li>3 mock interviews / month</li>
-          <li>Basic AI feedback</li>
-          <li>5 coding problems</li>
-        </ul>
-        <button class="btn btn-secondary btn-block" onclick="hideLanding()">Start Free</button>
-      </div>
-      <div class="price-card featured">
-        <div class="price-name">Pro</div>
-        <div class="price-amount">₹599</div>
-        <div class="price-per">/ month</div>
-        <ul class="price-features">
-          <li>Unlimited interviews</li>
-          <li>Full analytics suite</li>
-          <li>Resume AI parsing</li>
-          <li>Recording playback</li>
-          <li>Company prep packs</li>
-        </ul>
-        <button class="btn btn-primary btn-block" onclick="hideLanding()">Get Pro →</button>
-      </div>
-      <div class="price-card">
-        <div class="price-name">Enterprise</div>
-        <div class="price-amount">₹2,999</div>
-        <div class="price-per">/ month</div>
-        <ul class="price-features">
-          <li>Everything in Pro</li>
-          <li>Team management</li>
-          <li>Custom AI persona</li>
-          <li>API access</li>
-        </ul>
-        <button class="btn btn-secondary btn-block" onclick="hideLanding()">Contact Sales</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Footer CTA -->
   <div class="landing-footer-cta">
     <h2 style="font-size:clamp(22px,4vw,38px);font-weight:900;margin-bottom:12px;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Ready to land your dream job?</h2>
@@ -2008,11 +1817,6 @@ body{
     <div class="auth-title" id="auth-title">Welcome back</div>
     <div class="auth-sub" id="auth-sub">Sign in to continue your interview prep journey</div>
 
-    <button class="oauth-btn">
-      <span style="font-size:20px">🔵</span> Continue with Google
-    </button>
-    <div class="divider">or continue with email</div>
-
     <div class="form-group" id="auth-name-field" style="display:none">
       <label class="form-label">Full Name</label>
       <input type="text" class="form-input" placeholder="Arjun Kumar">
@@ -2035,7 +1839,7 @@ body{
       <a href="#" style="color:var(--blue);text-decoration:none;font-weight:700" id="auth-switch-link" onclick="event.preventDefault();toggleAuthMode()">Sign up free</a>
     </div>
     <div style="text-align:center;margin-top:8px">
-      <a href="#" style="color:var(--text3);text-decoration:none;font-size:12px">Forgot password?</a>
+      <a href="#" style="color:var(--text3);text-decoration:none;font-size:12px" onclick="event.preventDefault();handleForgotPassword()">Forgot password?</a>
     </div>
   </div>
 </div>
@@ -2044,14 +1848,19 @@ body{
 /* ================================================================
    API CLIENT
 ================================================================ */
-const API_BASE_URL = 'http://localhost:4000/api/v1';
+const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:4000'
+  : 'Enter your hugging face backend live urls here'; // <-- paste your backend URL here for production, e.g. 'https://interviewai-backend.hf.space'
+
+const API_BASE_URL = `${BACKEND_URL}/api/v1`;
+
 let authToken = localStorage.getItem('authToken') || null;
 let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
 
 class APIClient {
   static async request(method, path, body = null) {
     const headers = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     };
     if (authToken) {
       headers['Authorization'] = `Bearer ${authToken}`;
@@ -2063,7 +1872,7 @@ class APIClient {
     };
     if (body) options.body = JSON.stringify(body);
 
-    try {
+   try {
       const response = await fetch(`${API_BASE_URL}${path}`, options);
       const data = await response.json();
       
@@ -2074,10 +1883,13 @@ class APIClient {
       return data;
     } catch (error) {
       console.error('API Request failed:', error);
+      
+      // 👇 ADD THIS EXACT LINE:
+      alert(`Debug Info:\nTrying to hit: ${API_BASE_URL}${path}\nResult: ${error.message}`);
+      
       throw error;
     }
   }
-
   // AUTH
   static async register(email, password, fullName) {
     return this.request('POST', '/auth/register', { email, password, fullName });
@@ -2252,7 +2064,7 @@ function showPage(id, skipHistory) {
     'interview-room': 'Interview Room', coding: 'Coding Interview',
     resume: 'Resume Upload', analytics: 'Performance Report',
     recordings: 'Recordings', prep: 'Prep Hub',
-    pricing: 'Pricing Plans', notifications: 'Notifications',
+    notifications: 'Notifications',
     profile: 'Profile Settings', admin: 'Admin Panel'
   };
   const titleEl = document.getElementById('page-title');
@@ -2641,19 +2453,24 @@ async function startInterview() {
   }
 }
 
+let currentInterviewId = null;
+
 async function initializeInterviewRoom(interviewId) {
+  currentInterviewId = interviewId;
   try {
     const interview = await APIClient.getInterview(interviewId);
     // Start the interview
     await APIClient.startInterview(interviewId);
-    // Update UI with interview details
-    const headerDiv = document.querySelector('.room-header > div:nth-child(2)');
-    if (headerDiv) {
-      headerDiv.innerHTML = `
-        <div style="font-size:13.5px;font-weight:700">${interview.company} · ${interview.targetRole || 'Interview'} · ${interview.type}</div>
-        <div class="text-xs">Round ${interview.round || 1} of 3 · ${interview.difficulty} Difficulty</div>
-      `;
-    }
+
+    // Update UI with real interview details
+    const titleEl = document.getElementById('room-title');
+    const subInfoEl = document.getElementById('room-subtitle-info');
+    if (titleEl) titleEl.textContent = interview.title || 'Interview';
+    if (subInfoEl) subInfoEl.textContent = `${interview.type || ''} · ${interview.difficulty || 'MEDIUM'} Difficulty`;
+
+    // Render existing transcript (if any)
+    renderTranscript(interview.messages || []);
+
     // Setup WebSocket for real-time communication
     setupInterviewSocket(interviewId);
   } catch (error) {
@@ -2662,18 +2479,90 @@ async function initializeInterviewRoom(interviewId) {
   }
 }
 
+function renderTranscript(messages = []) {
+  const el = document.getElementById('interview-transcript');
+  if (!el) return;
+  if (messages.length === 0) {
+    el.innerHTML = '<div class="text-xs">Waiting for the interview to begin…</div>';
+    return;
+  }
+  el.innerHTML = messages.map(m => {
+    const isAi = m.role === 'assistant' || m.role === 'system';
+    return `<div class="text-xs" style="background:${isAi ? 'rgba(79,142,247,.08)' : 'var(--bg3)'};border-radius:8px;padding:8px 10px">
+      <strong style="color:${isAi ? 'var(--blue)' : 'var(--purple)'}">${isAi ? 'AI' : 'You'}:</strong> ${escHtml(m.content)}
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendInterviewAnswer() {
+  const input = document.getElementById('answer-input');
+  if (!input || !input.value.trim() || !currentInterviewId) return;
+
+  const content = input.value.trim();
+  input.value = '';
+
+  const transcriptEl = document.getElementById('interview-transcript');
+  if (transcriptEl) {
+    if (transcriptEl.querySelector('.text-xs')?.textContent.includes('Waiting')) transcriptEl.innerHTML = '';
+    transcriptEl.innerHTML += `<div class="text-xs" style="background:var(--bg3);border-radius:8px;padding:8px 10px"><strong style="color:var(--purple)">You:</strong> ${escHtml(content)}</div>`;
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+  }
+
+  const stateEl = document.getElementById('ai-state-text');
+  const thinkingEl = document.getElementById('thinking-dots');
+  if (stateEl) stateEl.textContent = '🤔 AI is thinking…';
+  if (thinkingEl) thinkingEl.style.display = '';
+
+  if (window.currentInterviewSocket && window.currentInterviewSocket.connected) {
+    window.currentInterviewSocket.emit('user.message', { interviewId: currentInterviewId, content });
+  } else {
+    // Fallback: no socket, call REST flow indirectly isn't available; show error
+    if (stateEl) stateEl.textContent = '⚠️ Not connected to live session';
+    if (thinkingEl) thinkingEl.style.display = 'none';
+  }
+}
+
+async function endInterview() {
+  if (!currentInterviewId) {
+    showPage('dashboard');
+    return;
+  }
+  if (!confirm('End this interview and generate your feedback report?')) return;
+
+  try {
+    await APIClient.completeInterview(currentInterviewId);
+    if (window.currentInterviewSocket) {
+      window.currentInterviewSocket.disconnect();
+      window.currentInterviewSocket = null;
+    }
+    showPage('analytics');
+    // Refresh interviews so the new completed one appears
+    const interviewsRes = await APIClient.getInterviews();
+    const interviews = Array.isArray(interviewsRes) ? interviewsRes : (interviewsRes.data || []);
+    populateAnalyticsSelector(interviews);
+    updateDashboardStats(interviews);
+    populateDashboardRecent(interviews);
+    populateRecordings(interviews);
+    // Load report for this interview
+    setTimeout(() => loadAnalyticsReport(currentInterviewId), 300);
+  } catch (error) {
+    alert('Failed to end interview: ' + error.message);
+  }
+}
+
 function setupInterviewSocket(interviewId) {
   if (typeof io === 'undefined') {
     console.error('Socket.IO failed to load — real-time features disabled');
     const subtitleText = document.getElementById('subtitle-text');
-    if (subtitleText) subtitleText.textContent = 'Live AI connection unavailable (network blocked socket.io). You can still use the room.';
+    if (subtitleText) subtitleText.textContent = 'Live AI connection unavailable (network blocked socket.io). Connect to the internet for live AI interaction, or use the Coding Room / Resume tools meanwhile.';
+    const stateEl = document.getElementById('ai-state-text');
+    if (stateEl) stateEl.textContent = '⚠️ Offline';
     return;
   }
   try {
-    const socket = io('http://localhost:4000', {
-      auth: {
-        token: authToken
-      },
+    const socket = io(`${BACKEND_URL}/interviews`, {
+      auth: {token: authToken},
       reconnection: true
     });
 
@@ -2684,6 +2573,10 @@ function setupInterviewSocket(interviewId) {
 
     socket.on('joined', (data) => {
       console.log('Successfully joined interview room:', data);
+      const stateEl = document.getElementById('ai-state-text');
+      if (stateEl) stateEl.textContent = '✅ Connected — type your introduction to begin';
+      const subtitleText = document.getElementById('subtitle-text');
+      if (subtitleText) subtitleText.textContent = 'Type your answer below to begin the interview.';
     });
 
     socket.on('transcript.partial', (data) => {
@@ -2693,9 +2586,19 @@ function setupInterviewSocket(interviewId) {
 
     socket.on('ai.message', (data) => {
       const subtitleText = document.getElementById('subtitle-text');
+      const content = data.content || data.metadata?.question || '';
       if (subtitleText) {
-        subtitleText.innerHTML = `<span style="color:var(--blue);font-weight:700">AI: </span>${data.content}`;
+        subtitleText.textContent = content;
       }
+      const transcriptEl = document.getElementById('interview-transcript');
+      if (transcriptEl) {
+        transcriptEl.innerHTML += `<div class="text-xs" style="background:rgba(79,142,247,.08);border-radius:8px;padding:8px 10px"><strong style="color:var(--blue)">AI:</strong> ${escHtml(content)}</div>`;
+        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+      }
+      const stateEl = document.getElementById('ai-state-text');
+      const thinkingEl = document.getElementById('thinking-dots');
+      if (stateEl) stateEl.textContent = '🎙️ Your turn — type your answer';
+      if (thinkingEl) thinkingEl.style.display = 'none';
     });
 
     socket.on('voice.ack', (data) => {
@@ -2704,6 +2607,14 @@ function setupInterviewSocket(interviewId) {
 
     socket.on('disconnect', () => {
       console.log('Disconnected from interview room');
+      const stateEl = document.getElementById('ai-state-text');
+      if (stateEl) stateEl.textContent = '🔌 Disconnected';
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err.message);
+      const stateEl = document.getElementById('ai-state-text');
+      if (stateEl) stateEl.textContent = '⚠️ Connection error';
     });
 
     window.currentInterviewSocket = socket;
@@ -2783,9 +2694,70 @@ async function handleResumeUpload(event) {
   }
 }
 
-function populateResumeData(data) {
-  // Update resume display with parsed data
-  console.log('Resume data:', data);
+let currentResumeId = null;
+
+function populateResumeData(resume) {
+  currentResumeId = resume.id;
+  console.log('Resume data:', resume);
+
+  const filenameEl = document.getElementById('resume-filename');
+  if (filenameEl) filenameEl.textContent = resume.fileName || 'resume';
+
+  const structured = resume.structuredData;
+
+  // Skills
+  const skillsEl = document.getElementById('resume-skills-tags');
+  if (skillsEl) {
+    const skills = structured?.skills || structured?.technologies || [];
+    skillsEl.innerHTML = skills.length > 0
+      ? skills.map(s => `<span class="tag">${escHtml(s)}</span>`).join('')
+      : '<span class="text-xs">No skills detected. AI parsing may need an API key configured, or the PDF text could not be extracted.</span>';
+  }
+
+  // Experience
+  const expEl = document.getElementById('resume-experience-list');
+  if (expEl) {
+    const exp = structured?.experience || [];
+    expEl.innerHTML = exp.length > 0
+      ? exp.map(e => `<div style="padding:12px 14px;background:var(--bg3);border-radius:9px;border-left:3px solid var(--blue)">
+          <div style="font-size:13.5px;font-weight:700">${escHtml(e.role || '')} ${e.company ? '· ' + escHtml(e.company) : ''}</div>
+          <div class="text-xs mt-4">${escHtml(e.duration || '')}</div>
+        </div>`).join('')
+      : '<div class="text-xs">No work experience detected.</div>';
+  }
+
+  // Education
+  const eduEl = document.getElementById('resume-education-list');
+  if (eduEl) {
+    const edu = structured?.education || [];
+    eduEl.innerHTML = edu.length > 0
+      ? edu.map(e => `<div style="padding:12px 14px;background:var(--bg3);border-radius:9px;border-left:3px solid var(--green);margin-bottom:8px">
+          <div style="font-size:13.5px;font-weight:700">${escHtml(e.degree || '')}</div>
+          <div class="text-xs mt-4">${escHtml(e.institution || '')}</div>
+        </div>`).join('')
+      : '<div class="text-xs">No education detected.</div>';
+  }
+
+  // Show "Generate Questions" button
+  const genBtn = document.getElementById('resume-gen-questions-btn');
+  if (genBtn) genBtn.style.display = '';
+}
+
+async function generateResumeQuestions() {
+  if (!currentResumeId) return;
+  const listEl = document.getElementById('resume-questions-list');
+  if (listEl) listEl.innerHTML = '<div class="text-xs">⟳ Generating personalized questions…</div>';
+  try {
+    const questions = await APIClient.generateQuestionsFromResume(currentResumeId);
+    const list = Array.isArray(questions) ? questions : [];
+    if (listEl) {
+      listEl.innerHTML = list.length > 0
+        ? list.map((q, i) => `<div style="padding:10px 13px;background:var(--bg3);border-radius:8px;font-size:12.5px;color:var(--text2);border:1px solid var(--border)">${i + 1}. ${escHtml(q.prompt)}</div>`).join('')
+        : '<div class="text-xs">No questions generated.</div>';
+    }
+  } catch (error) {
+    if (listEl) listEl.innerHTML = `<div class="text-xs">Failed: ${escHtml(error.message)}</div>`;
+  }
 }
 
 function handlePhotoUpload(event) {
@@ -2843,7 +2815,7 @@ async function initializeCodingRoom(questionSlug) {
     const testCasesEl = document.getElementById('coding-test-cases');
     if (testCasesEl && Array.isArray(question.testCases)) {
       testCasesEl.innerHTML = question.testCases.map(tc =>
-        `<div class="test-case">Input: ${escHtml(JSON.stringify(tc.input))}<br>Expected: ${escHtml(JSON.stringify(tc.expectedOutput))}</div>`
+        `<div class="test-case">Input: ${escHtml(JSON.stringify(tc.input))}<br>Expected: ${escHtml(JSON.stringify(tc.expected))}</div>`
       ).join('') || '<div class="text-xs">No visible test cases.</div>';
     }
 
@@ -2929,7 +2901,6 @@ async function loadDashboardData() {
     populateAnalyticsSelector(interviews);
     loadNotifications();
     populateAdminUsers();
-    loadBillingInfo();
   } catch (error) {
     console.error('Failed to load dashboard:', error);
     // Fall back to empty state
@@ -3021,79 +2992,108 @@ function updateDashboardStats(interviews = []) {
 
 function updateProfileHeader(user) {
   if (!user) return;
-  const name = user.profile?.fullName || user.fullName || user.email || 'User';
-  const role = user.profile?.currentRole || '';
-  const location = user.profile?.location || '';
+  const profile = user.profile || {};
+  const name = profile.fullName || user.email || 'User';
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
   const nameEl = document.getElementById('profile-name');
   if (nameEl) nameEl.textContent = name;
 
   const subEl = document.getElementById('profile-subtitle');
-  if (subEl) subEl.textContent = [role, location].filter(Boolean).join(' · ') || user.email || '';
+  if (subEl) subEl.textContent = [profile.headline, profile.country].filter(Boolean).join(' · ') || user.email || '';
 
   const avatarEl = document.getElementById('profile-avatar');
   if (avatarEl && !avatarEl.style.backgroundImage) avatarEl.textContent = initials;
 
   const planEl = document.getElementById('profile-plan-badge');
-  if (planEl) planEl.textContent = '✦ ' + (user.subscription?.plan || user.plan || 'Free') + ' Plan';
+  const planName = user.subscriptions?.[0]?.plan?.name || 'Free';
+  if (planEl) planEl.textContent = '✦ ' + planName + ' Plan';
+
+  // Populate editable form fields with real data
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
+  setVal('profile-input-fullname', profile.fullName);
+  setVal('profile-input-email', user.email);
+  setVal('profile-input-phone', profile.phone);
+  setVal('profile-input-country', profile.country);
+  setVal('profile-input-company', profile.currentCompany);
+  setVal('profile-input-targetrole', profile.targetRole);
+  setVal('profile-input-headline', profile.headline);
+  setVal('profile-input-experience', profile.yearsExperience);
+  setVal('profile-input-bio', profile.bio);
+  setVal('profile-input-targetcompanies', (profile.targetCompanies || []).join(', '));
 }
 
-/* ================================================================
-   BILLING / PRICING
-================================================================ */
-async function upgradePlan(planCode) {
+async function saveProfile() {
   if (!authToken) {
     showAuth('login');
     return;
   }
+  const getVal = (id) => document.getElementById(id)?.value?.trim();
+  const targetCompaniesRaw = getVal('profile-input-targetcompanies');
+
+  const payload = {
+    fullName: getVal('profile-input-fullname') || undefined,
+    phone: getVal('profile-input-phone') || undefined,
+    country: getVal('profile-input-country') || undefined,
+    currentCompany: getVal('profile-input-company') || undefined,
+    targetRole: getVal('profile-input-targetrole') || undefined,
+    headline: getVal('profile-input-headline') || undefined,
+    yearsExperience: getVal('profile-input-experience') ? Number(getVal('profile-input-experience')) : undefined,
+    bio: getVal('profile-input-bio') || undefined,
+    targetCompanies: targetCompaniesRaw ? targetCompaniesRaw.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+  };
+  // Remove undefined keys
+  Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+  const statusEls = [document.getElementById('profile-save-status'), document.getElementById('profile-save-status-2')];
+  statusEls.forEach(el => { if (el) el.textContent = 'Saving…'; });
+
   try {
-    const plans = await APIClient.request('GET', '/payments/plans');
-    const plan = (Array.isArray(plans) ? plans : []).find(p => p.code === planCode);
-    if (!plan) {
-      alert(`The "${planCode}" plan isn't configured on this server yet. Ask the site admin to add it to the subscription_plans table.`);
-      return;
-    }
-    const result = await APIClient.request('POST', '/payments/checkout', { planId: plan.id, provider: 'STRIPE' });
-    if (result.checkoutUrl) {
-      window.location.href = result.checkoutUrl;
-    } else {
-      alert(result.note || 'Checkout initiated, but no payment provider is configured yet.');
-    }
+    await APIClient.request('PATCH', '/users/me/profile', payload);
+    const user = await APIClient.getCurrentUser();
+    currentUser = user;
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    updateProfileHeader(user);
+    updateUserCard();
+    statusEls.forEach(el => { if (el) { el.textContent = '✅ Saved'; el.style.color = 'var(--green)'; } });
+    setTimeout(() => statusEls.forEach(el => { if (el) el.textContent = ''; }), 2500);
   } catch (error) {
-    alert('Checkout failed: ' + error.message);
+    statusEls.forEach(el => { if (el) { el.textContent = '✗ ' + error.message; el.style.color = 'var(--red)'; } });
   }
 }
 
-async function loadBillingInfo() {
-  if (!authToken) return;
+async function requestPasswordReset() {
+  if (!currentUser?.email) return;
+  const statusEl = document.getElementById('reset-password-status');
+  if (statusEl) statusEl.textContent = 'Sending…';
   try {
-    const history = await APIClient.request('GET', '/payments/billing-history');
-    const list = Array.isArray(history) ? history : [];
-
-    const planBadge = document.getElementById('billing-plan-badge');
-    const renewInfo = document.getElementById('billing-renew-info');
-    const plan = currentUser?.subscription?.plan?.name || 'Free';
-    if (planBadge) {
-      planBadge.textContent = plan;
-      planBadge.className = 'badge ' + (plan === 'Free' ? 'badge-gray' : 'badge-blue');
-    }
-    if (renewInfo) renewInfo.textContent = plan === 'Free' ? 'Free plan' : `${plan} plan`;
-
-    const historyEl = document.getElementById('billing-history-content');
-    if (historyEl) {
-      if (list.length === 0) {
-        historyEl.innerHTML = '<div class="text-xs">No billing history yet.</div>';
-      } else {
-        historyEl.innerHTML = list.map(p =>
-          `<div class="flex-between text-sm mb-8"><span>${new Date(p.createdAt).toLocaleDateString()}</span><span style="font-weight:700;color:var(--text1)">${(p.amountCents / 100).toFixed(2)} ${p.currency || ''}</span></div>`
-        ).join('');
-      }
-    }
+    await APIClient.request('POST', '/auth/password/forgot', { email: currentUser.email });
+    if (statusEl) { statusEl.textContent = '✅ Reset link sent to ' + currentUser.email; statusEl.style.color = 'var(--green)'; }
   } catch (error) {
-    console.error('Failed to load billing info:', error);
+    if (statusEl) { statusEl.textContent = '✗ ' + error.message; statusEl.style.color = 'var(--red)'; }
   }
 }
+
+async function handleForgotPassword() {
+  const emailInput = document.querySelector('.auth-card input[type="email"]');
+  const email = emailInput?.value?.trim();
+  if (!email) {
+    alert('Please enter your email address in the field above first, then click "Forgot password?"');
+    return;
+  }
+  try {
+    await APIClient.request('POST', '/auth/password/forgot', { email });
+    alert(`If an account exists for ${email}, a password reset link has been sent.`);
+  } catch (error) {
+    alert('Request failed: ' + error.message);
+  }
+}
+
+function logoutAllSessions() {
+  if (!confirm('This will log you out of all devices. Continue?')) return;
+  logout();
+}
+
 let allInterviews = [];
 
 function populateAnalyticsSelector(interviews = []) {
@@ -3322,7 +3322,7 @@ function populateRecordings(interviews = []) {
   if (!el) return;
   el.innerHTML = data.length > 0
     ? data.map(d =>
-      `<div class="recording-item" onclick="showPage('analytics')">
+      `<div class="recording-item" onclick="showPage('analytics');setTimeout(()=>loadAnalyticsReport('${d.id}'),100)">
         <div class="rec-thumb">${d.emoji}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13.5px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.title}</div>
@@ -3336,10 +3336,7 @@ function populateRecordings(interviews = []) {
           <div style="font-size:20px;font-weight:800;color:var(--green)">${d.score === null ? '—' : d.score + '%'}</div>
           <div class="text-xs">score</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-          <button class="btn btn-secondary btn-sm">▶ Play</button>
-          <button class="btn btn-secondary btn-sm">⬇ Save</button>
-        </div>
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();showPage('analytics');setTimeout(()=>loadAnalyticsReport('${d.id}'),100)">View Report</button>
       </div>`
     ).join('')
     : '<div class="text-xs" style="color:var(--text3);text-align:center;padding:20px">No recordings yet.</div>';

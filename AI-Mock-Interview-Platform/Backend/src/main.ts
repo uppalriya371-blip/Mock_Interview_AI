@@ -12,22 +12,31 @@ async function bootstrap() {
   app.setGlobalPrefix(prefix);
   app.enableVersioning({ type: VersioningType.URI });
 
-  // CORS: allow configured FRONTEND_URL + file:// origins in development
+  // 🚨 FULLY ROBUST CORS CONFIGURATION FOR MOBILE & CLOUD BLOCKS 🚨
   app.enableCors({
-    origin: (origin, callback) => {
-      const allowed = process.env.FRONTEND_URL?.split(',').map((u) => u.trim()) ?? [];
-      const isDev = process.env.NODE_ENV !== 'production';
-      // Allow requests with no origin (file://, Postman, Swagger) or matching origin
-      if (!origin || allowed.includes(origin) || isDev) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: [
+      'http://127.0.0.1:5500',
+      'http://localhost:5500',
+      'enter you vercel url here of frontend', // Your Vercel frontend url here
+      
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, Bypass-Tunnel-Reminder',
     credentials: true,
   });
 
-  app.use(helmet());
+  // UPDATED: Relax CSP configurations slightly to allow Socket.io CDN and inline scripting elements
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.socket.io"],
+        },
+      },
+    }),
+  );
+  
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
@@ -44,9 +53,9 @@ async function bootstrap() {
     .build();
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
 
-  const port = Number(process.env.PORT ?? 4000);
-  await app.listen(port);
-  console.log(`\n✅ Backend running at http://localhost:${port}`);
-  console.log(`📚 Swagger docs  at http://localhost:${port}/docs\n`);
-}
-bootstrap();
+  const port = Number(process.env.PORT ?? 7860);
+  await app.listen(port, '0.0.0.0');
+  console.log(`\n✅ Cloud Backend running on port ${port}`);
+  
+ }
+bootstrap()

@@ -32,7 +32,7 @@ export class InterviewsService {
     await this.prisma.interview.findFirstOrThrow({ where: { id, userId } });
     const interview = await this.prisma.interview.update({ where: { id }, data: { status: InterviewStatus.COMPLETED, endedAt: new Date() } });
 
-    // Generate feedback report synchronously (queue is disabled in this environment)
+    // Generate feedback report synchronously (no background queue in this environment)
     try {
       const messages = await this.prisma.interviewMessage.findMany({ where: { interviewId: id, role: 'user' }, orderBy: { createdAt: 'asc' } });
       const transcript = messages.map((m) => m.content).join('\n');
@@ -40,36 +40,20 @@ export class InterviewsService {
       const readinessScore = Math.round(
         (analysis.communicationScore + analysis.technicalScore + analysis.confidenceScore + analysis.grammarScore + analysis.behavioralScore) / 5,
       );
-      await this.prisma.feedbackReport.upsert({
-        where: { interviewId: id },
-        update: {
-          communicationScore: analysis.communicationScore,
-          technicalScore: analysis.technicalScore,
-          confidenceScore: analysis.confidenceScore,
-          grammarScore: analysis.grammarScore,
-          behavioralScore: analysis.behavioralScore,
-          fillerWordCount: analysis.fillerWordCount,
-          readinessScore,
-          strengths: analysis.strengths ?? [],
-          weaknesses: analysis.weaknesses ?? [],
-          suggestions: analysis.suggestions ?? [],
-          rawAnalysis: analysis as any,
-        },
-        create: {
-          interviewId: id,
-          communicationScore: analysis.communicationScore,
-          technicalScore: analysis.technicalScore,
-          confidenceScore: analysis.confidenceScore,
-          grammarScore: analysis.grammarScore,
-          behavioralScore: analysis.behavioralScore,
-          fillerWordCount: analysis.fillerWordCount,
-          readinessScore,
-          strengths: analysis.strengths ?? [],
-          weaknesses: analysis.weaknesses ?? [],
-          suggestions: analysis.suggestions ?? [],
-          rawAnalysis: analysis as any,
-        },
-      });
+      const data = {
+        communicationScore: analysis.communicationScore,
+        technicalScore: analysis.technicalScore,
+        confidenceScore: analysis.confidenceScore,
+        grammarScore: analysis.grammarScore,
+        behavioralScore: analysis.behavioralScore,
+        fillerWordCount: analysis.fillerWordCount,
+        readinessScore,
+        strengths: analysis.strengths ?? [],
+        weaknesses: analysis.weaknesses ?? [],
+        suggestions: analysis.suggestions ?? [],
+        rawAnalysis: analysis as any,
+      };
+      await this.prisma.feedbackReport.upsert({ where: { interviewId: id }, update: data, create: { interviewId: id, ...data } });
     } catch (e) {
       console.error('Feedback generation failed:', (e as Error).message);
     }
@@ -88,6 +72,6 @@ export class InterviewsService {
       type: interview?.type,
       language: interview?.language,
     });
-    return this.prisma.interviewMessage.create({ data: { interviewId, role: 'assistant', content: next.question, metadata: next } });
+    return this.prisma.interviewMessage.create({ data: { interviewId, role: 'assistant', content: next.question, metadata: next as any } });
   }
 }
