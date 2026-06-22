@@ -1310,11 +1310,8 @@ body{
 
               <!-- User Video -->
               <div class="video-card" id="user-video">
-                <div class="cam-off-msg" id="cam-off-msg">
-                  <div style="font-size:52px">👤</div>
-                  <div style="font-size:13px;font-weight:700;margin-top:6px">Arjun Kumar</div>
-                  <div class="text-xs">Camera is off</div>
-                </div>
+                <video id="user-video-stream" autoplay muted playsinline
+                  style="width:100%;height:100%;object-fit:cover;border-radius:12px;display:block"></video>
                 <div class="vc-label">You</div>
               </div>
             </div>
@@ -1456,6 +1453,9 @@ body{
         </div>
         <div class="flex gap-8">
           <select id="analytics-interview-select" class="form-input" style="max-width:280px" onchange="loadAnalyticsReport(this.value)"></select>
+          <button class="btn btn-secondary btn-sm" id="download-pdf-btn" onclick="downloadReportAsPDF()" style="display:none">
+            ⬇ Download PDF
+          </button>
           <button class="btn btn-primary btn-sm" onclick="showPage('setup')">🔄 New Interview</button>
         </div>
       </div>
@@ -1817,17 +1817,29 @@ body{
     <div class="auth-title" id="auth-title">Welcome back</div>
     <div class="auth-sub" id="auth-sub">Sign in to continue your interview prep journey</div>
 
+    <div id="auth-error" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#ef4444;margin-bottom:12px;display:none"></div>
+
     <div class="form-group" id="auth-name-field" style="display:none">
       <label class="form-label">Full Name</label>
       <input type="text" class="form-input" placeholder="Arjun Kumar">
     </div>
-    <div class="form-group">
+    <div class="form-group" id="auth-email-field">
       <label class="form-label">Email Address</label>
-      <input type="email" class="form-input" placeholder="arjun@example.com">
+      <input type="email" class="form-input" placeholder="you@gmail.com">
+      <div class="text-xs" style="color:var(--text3);margin-top:4px">
+        📧 Only Gmail addresses (@gmail.com) are accepted
+      </div>
     </div>
-    <div class="form-group">
+    <div class="form-group" id="auth-password-field">
       <label class="form-label">Password</label>
       <input type="password" class="form-input" placeholder="••••••••">
+    </div>
+    <div class="form-group" id="auth-reset-field" style="display:none">
+      <label class="form-label">New Password</label>
+      <input type="password" id="auth-reset-password" class="form-input" placeholder="••••••••">
+      <div class="text-xs" style="color:var(--text3);margin-top:4px">
+        Must be 8+ chars with uppercase, lowercase, and a number
+      </div>
     </div>
 
     <button class="btn btn-primary btn-block" id="auth-submit" style="margin-top:6px" onclick="handleAuthSubmit()">
@@ -1850,7 +1862,7 @@ body{
 ================================================================ */
 const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:4000'
-  : 'Enter your hugging face backend live urls here'; // <-- paste your backend URL here for production, e.g. 'https://interviewai-backend.hf.space'
+  : 'https://soham1937-ai-mock-backend.hf.space'; // <-- Paste your localtunnel link here
 
 const API_BASE_URL = `${BACKEND_URL}/api/v1`;
 
@@ -1877,16 +1889,18 @@ class APIClient {
       const data = await response.json();
       
       if (!response.ok) {
-        console.error(`API Error [${response.status}]:`, data);
-        throw new Error(data.message || `API Error: ${response.status}`);
+        const detail = data.error;
+        const msg = Array.isArray(data.message)
+          ? data.message.join(', ')
+          : (data.message
+            || (typeof detail === 'string' ? detail
+            : (Array.isArray(detail?.message) ? detail.message.join(', ') : detail?.message))
+            || `API Error: ${response.status}`);
+        throw new Error(msg);
       }
       return data;
     } catch (error) {
-      console.error('API Request failed:', error);
-      
-      // 👇 ADD THIS EXACT LINE:
-      alert(`Debug Info:\nTrying to hit: ${API_BASE_URL}${path}\nResult: ${error.message}`);
-      
+      if (error.message && !error.message.startsWith('API Error')) throw error;
       throw error;
     }
   }
@@ -2139,6 +2153,7 @@ function hideLanding() {
 ================================================================ */
 function showAuth(mode) {
   authMode = mode || 'login';
+  clearAuthError();
   updateAuthUI();
   document.getElementById('auth-overlay').classList.add('show');
 }
@@ -2149,63 +2164,117 @@ function toggleAuthMode() {
   authMode = authMode === 'login' ? 'signup' : 'login';
   updateAuthUI();
 }
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  if (el) { el.textContent = msg; el.style.display = ''; }
+}
+function clearAuthError() {
+  const el = document.getElementById('auth-error');
+  if (el) el.style.display = 'none';
+}
 function updateAuthUI() {
   const isSignup = authMode === 'signup';
-  document.getElementById('auth-title').textContent = isSignup ? 'Create your account' : 'Welcome back';
-  document.getElementById('auth-sub').textContent = isSignup
-    ? 'Start your interview prep journey today — it\'s free'
-    : 'Sign in to continue your interview prep journey';
+  const isReset = authMode === 'reset';
+  document.getElementById('auth-title').textContent = isReset ? 'Reset your password' : (isSignup ? 'Create your account' : 'Welcome back');
+  document.getElementById('auth-sub').textContent = isReset
+    ? 'Enter your new password below'
+    : (isSignup ? 'Start your interview prep journey today — it\'s free' : 'Sign in to continue your interview prep journey');
   document.getElementById('auth-name-field').style.display = isSignup ? 'block' : 'none';
-  document.getElementById('auth-submit').textContent = isSignup ? 'Create Account →' : 'Sign In →';
-  document.getElementById('auth-submit').onclick = handleAuthSubmit;
-  document.getElementById('auth-switch-text').textContent = isSignup ? 'Already have an account? ' : "Don't have an account? ";
-  document.getElementById('auth-switch-link').textContent = isSignup ? 'Sign in' : 'Sign up free';
+  document.getElementById('auth-reset-field').style.display = isReset ? 'block' : 'none';
+  const emailGroup = document.getElementById('auth-email-field');
+  const passwordGroup = document.getElementById('auth-password-field');
+  if (emailGroup) emailGroup.style.display = isReset ? 'none' : '';
+  if (passwordGroup) passwordGroup.style.display = isReset ? 'none' : '';
+  document.getElementById('auth-submit').textContent = isReset ? 'Reset Password →' : (isSignup ? 'Create Account →' : 'Sign In →');
+  document.getElementById('auth-submit').onclick = isReset ? handleResetPasswordSubmit : handleAuthSubmit;
+  document.getElementById('auth-switch-text').textContent = isReset ? '' : (isSignup ? 'Already have an account? ' : "Don't have an account? ");
+  document.getElementById('auth-switch-link').textContent = isReset ? '' : (isSignup ? 'Sign in' : 'Sign up free');
+  document.getElementById('auth-switch-link').style.display = isReset ? 'none' : '';
+  const forgotLink = document.querySelector('.auth-card a[onclick*="handleForgotPassword"]');
+  if (forgotLink) forgotLink.style.display = isReset ? 'none' : '';
 }
 
 async function handleAuthSubmit() {
-  const emailInput = document.querySelector('.auth-card .form-input[type="email"]');
-  const passwordInput = document.querySelector('.auth-card .form-input[type="password"]');
+  clearAuthError();
+  const emailInput = document.querySelector('#auth-email-field .form-input');
+  const passwordInput = document.querySelector('#auth-password-field .form-input');
   const nameInput = document.querySelector('#auth-name-field .form-input');
   
   const email = emailInput?.value?.trim();
   const password = passwordInput?.value?.trim();
   const fullName = nameInput?.value?.trim();
+  const isSignup = authMode === 'signup';
 
   if (!email || !password) {
-    alert('Please enter email and password');
+    showAuthError('Please enter email and password');
     return;
   }
-  if (authMode === 'signup' && !fullName) {
-    alert('Please enter your full name');
+  if (isSignup && !fullName) {
+    showAuthError('Please enter your full name');
+    return;
+  }
+  if (isSignup && !email.toLowerCase().endsWith('@gmail.com')) {
+    showAuthError('Only Gmail addresses (@gmail.com) are allowed to register.');
     return;
   }
 
   const btn = document.getElementById('auth-submit');
   btn.disabled = true;
-  btn.textContent = authMode === 'signup' ? 'Creating Account…' : 'Signing In…';
+  btn.textContent = isSignup ? 'Creating Account…' : 'Signing In…';
 
-  try {
+ try {
     let response;
-    if (authMode === 'signup') {
+    if (isSignup) {
       response = await APIClient.register(email, password, fullName);
     } else {
       response = await APIClient.login(email, password);
     }
 
-    // Store auth token and user info
+    // Both login and signup now return the auth token directly!
     authToken = response.accessToken || response.token || response.access_token;
     currentUser = response.user || { email, fullName };
+    
     localStorage.setItem('authToken', authToken);
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-    // Update UI
+    
     updateUserCard();
     hideAuth();
     hideLanding();
     showPage('dashboard');
     loadDashboardData();
+
   } catch (error) {
-    alert('Auth failed: ' + error.message);
+    showAuthError('Auth failed: ' + error.message);
+  } finally {
+    btn.disabled = false;
+    updateAuthUI();
+  }
+}
+async function handleResetPasswordSubmit() {
+  clearAuthError();
+  const newPassword = document.getElementById('auth-reset-password')?.value?.trim();
+  const token = window._pendingResetToken;
+  if (!token) {
+    showAuthError('Reset link is invalid or expired. Please request a new one.');
+    return;
+  }
+  if (!newPassword) {
+    showAuthError('Please enter a new password');
+    return;
+  }
+
+  const btn = document.getElementById('auth-submit');
+  btn.disabled = true;
+  btn.textContent = 'Resetting…';
+
+  try {
+    await APIClient.request('POST', '/auth/password/reset', { token, password: newPassword });
+    window._pendingResetToken = null;
+    hideAuth();
+    alert('Password reset successful! You can now log in with your new password.');
+    showAuth('login');
+  } catch (error) {
+    showAuthError('Reset failed: ' + error.message);
   } finally {
     btn.disabled = false;
     updateAuthUI();
@@ -2281,19 +2350,65 @@ function fmt(sec) {
    INTERVIEW ROOM CONTROLS
 ================================================================ */
 function toggleMic() {
-  micOn = !micOn;
   const btn = document.getElementById('mic-btn');
-  if (!btn) return;
-  btn.textContent = micOn ? '🎙️' : '🔇';
-  btn.className = 'ctrl-btn ' + (micOn ? 'ctrl-active' : 'ctrl-muted');
+
+  if (!window._micStream) {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      window._micStream = stream;
+      btn?.classList.add('ctrl-active');
+      btn?.classList.remove('ctrl-muted');
+      btn.textContent = '🎙️';
+      micOn = true;
+    }).catch(() => {
+      alert('Microphone access denied. Please allow microphone access in your browser settings.');
+    });
+    return;
+  }
+
+  const audioTrack = window._micStream.getAudioTracks()[0];
+  if (audioTrack) {
+    audioTrack.enabled = !audioTrack.enabled;
+    micOn = audioTrack.enabled;
+    btn?.classList.toggle('ctrl-muted', !audioTrack.enabled);
+    btn?.classList.toggle('ctrl-active', audioTrack.enabled);
+    btn.textContent = audioTrack.enabled ? '🎙️' : '🔇';
+  }
+}
+async function startCamera() {
+  const videoEl = document.getElementById('user-video-stream');
+  if (!videoEl) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+      audio: false,
+    });
+    videoEl.srcObject = stream;
+    videoEl.play();
+    window._cameraStream = stream;
+    camOn = true;
+    const btn = document.getElementById('cam-btn');
+    if (btn) {
+      btn.classList.add('ctrl-active');
+      btn.classList.remove('ctrl-muted');
+    }
+  } catch (err) {
+    camOn = false;
+  }
 }
 function toggleCam() {
-  camOn = !camOn;
   const btn = document.getElementById('cam-btn');
-  const msg = document.getElementById('cam-off-msg');
-  if (!btn) return;
-  btn.className = 'ctrl-btn ' + (camOn ? 'ctrl-active' : 'ctrl-muted');
-  if (msg) msg.style.display = camOn ? 'none' : 'flex';
+  const stream = window._cameraStream;
+  if (stream) {
+    const videoTrack = stream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.enabled = !videoTrack.enabled;
+      camOn = videoTrack.enabled;
+      btn?.classList.toggle('ctrl-muted', !videoTrack.enabled);
+      btn?.classList.toggle('ctrl-active', videoTrack.enabled);
+    }
+  } else {
+    startCamera();
+  }
 }
 function toggleAIState() {
   aiSpeaking = !aiSpeaking;
@@ -2473,6 +2588,7 @@ async function initializeInterviewRoom(interviewId) {
 
     // Setup WebSocket for real-time communication
     setupInterviewSocket(interviewId);
+    startCamera();
   } catch (error) {
     console.error('Failed to initialize interview:', error);
     alert('Failed to setup interview: ' + error.message);
@@ -2532,6 +2648,14 @@ async function endInterview() {
 
   try {
     await APIClient.completeInterview(currentInterviewId);
+    if (window._cameraStream) {
+      window._cameraStream.getTracks().forEach(t => t.stop());
+      window._cameraStream = null;
+    }
+    if (window._micStream) {
+      window._micStream.getTracks().forEach(t => t.stop());
+      window._micStream = null;
+    }
     if (window.currentInterviewSocket) {
       window.currentInterviewSocket.disconnect();
       window.currentInterviewSocket = null;
@@ -2807,7 +2931,7 @@ async function initializeCodingRoom(questionSlug) {
     if (titleEl) titleEl.textContent = question.title || 'Coding Problem';
 
     const descEl = document.getElementById('coding-problem-description');
-    if (descEl) descEl.innerHTML = (question.description || '').replace(/\n/g, '<br>');
+    if (descEl) descEl.innerHTML = escHtml(question.description || '').replace(/\n/g, '<br>');
 
     const editor = document.getElementById('code-editor');
     if (editor) editor.value = question.starterCode || `# Write your solution for "${question.title}" here\n`;
@@ -3104,6 +3228,8 @@ function populateAnalyticsSelector(interviews = []) {
 
   if (completed.length === 0) {
     select.style.display = 'none';
+    const dlBtn = document.getElementById('download-pdf-btn');
+    if (dlBtn) dlBtn.style.display = 'none';
     document.getElementById('analytics-subtitle').textContent = 'No completed interviews yet';
     document.getElementById('analytics-content').innerHTML = `
       <div class="card" style="text-align:center;padding:40px 20px">
@@ -3248,6 +3374,58 @@ function renderAnalyticsReport(report) {
       </div>
     </div>
   `;
+
+  const dlBtn = document.getElementById('download-pdf-btn');
+  if (dlBtn) dlBtn.style.display = '';
+}
+
+function downloadReportAsPDF() {
+  const contentEl = document.getElementById('analytics-content');
+  const subtitleEl = document.getElementById('analytics-subtitle');
+  if (!contentEl) return;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>InterviewAI Performance Report</title>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: white; margin: 0; padding: 32px; }
+        h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; color: #1a1a2e; }
+        .subtitle { font-size: 13px; color: #666; margin-bottom: 24px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: #f5f7ff; border-radius: 10px; padding: 16px; text-align: center; }
+        .stat-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .stat-value { font-size: 28px; font-weight: 800; color: #4F8EF7; }
+        .section { margin-bottom: 20px; }
+        .section-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: #1a1a2e; border-bottom: 2px solid #f0f0f0; padding-bottom: 6px; }
+        .progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 13px; }
+        .progress-label { width: 160px; flex-shrink: 0; }
+        .progress-bar { flex: 1; height: 8px; background: #eef0ff; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #4F8EF7; border-radius: 4px; }
+        .score-val { width: 40px; text-align: right; font-weight: 700; color: #4F8EF7; }
+        .feedback-item { background: #f9f9ff; border-left: 3px solid #4F8EF7; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; border-radius: 0 6px 6px 0; }
+        .suggestion-item { padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+        .footer { margin-top: 32px; font-size: 11px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 16px; }
+        @media print { @page { margin: 20mm; } }
+      </style>
+    </head>
+    <body>
+      <h1>InterviewAI — Performance Report</h1>
+      <div class="subtitle">${escHtml(subtitleEl?.textContent || '')} · Generated ${new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+      ${contentEl.innerHTML}
+      <div class="footer">Generated by InterviewAI · Confidential · ${new Date().getFullYear()}</div>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 500);
 }
 
 function populateDashboardRecent(interviews = []) {
@@ -3274,7 +3452,7 @@ function populateDashboardRecent(interviews = []) {
       `<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="showPage('analytics')">
         <div style="font-size:24px">${d.score === null ? '🟡' : '🔵'}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.role}</div>
+          <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(d.role)}</div>
           <div class="text-xs">${d.type} · ${d.time}</div>
         </div>
         <span class="badge ${d.badge}">${d.score === null ? 'Pending' : d.score + '%'}</span>
@@ -3325,12 +3503,12 @@ function populateRecordings(interviews = []) {
       `<div class="recording-item" onclick="showPage('analytics');setTimeout(()=>loadAnalyticsReport('${d.id}'),100)">
         <div class="rec-thumb">${d.emoji}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13.5px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.title}</div>
+          <div style="font-size:13.5px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(d.title)}</div>
           <div style="display:flex;gap:10px;margin-bottom:6px">
-            <span class="text-xs">📅 ${d.date}</span>
-            <span class="text-xs">⏱️ ${d.dur}</span>
+            <span class="text-xs">📅 ${escHtml(d.date)}</span>
+            <span class="text-xs">⏱️ ${escHtml(d.dur)}</span>
           </div>
-          <div style="display:flex;gap:6px">${d.tags.map(t => `<span class="badge badge-gray">${t}</span>`).join('')}</div>
+          <div style="display:flex;gap:6px">${d.tags.map(t => `<span class="badge badge-gray">${escHtml(t)}</span>`).join('')}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:20px;font-weight:800;color:var(--green)">${d.score === null ? '—' : d.score + '%'}</div>
@@ -3504,6 +3682,43 @@ document.querySelectorAll('.nav-item[data-page]').forEach(item => {
    INIT
 ================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const verifyToken = urlParams.get('verify');
+  const resetToken = urlParams.get('reset');
+
+  if (verifyToken) {
+    fetch(`${API_BASE_URL}/auth/email/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: verifyToken }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      window.history.replaceState({}, '', window.location.pathname);
+      if (data.ok) {
+        document.body.insertAdjacentHTML('beforeend', `
+          <div id="verify-success" style="position:fixed;inset:0;background:var(--bg1);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:40px;text-align:center">
+            <div style="font-size:56px;margin-bottom:20px">✅</div>
+            <div style="font-size:24px;font-weight:800;margin-bottom:12px">Email Verified!</div>
+            <div style="font-size:15px;color:var(--text2)">Your Gmail account is verified. You can now log in.</div>
+            <button class="btn btn-primary" style="margin-top:28px" onclick="document.getElementById('verify-success').remove();showAuth('login')">
+              Log In Now
+            </button>
+          </div>
+        `);
+      } else {
+        alert('Verification failed or link expired. Please register again.');
+      }
+    })
+    .catch(() => alert('Verification request failed. Please try again.'));
+  }
+
+  if (resetToken) {
+    window.history.replaceState({}, '', window.location.pathname);
+    window._pendingResetToken = resetToken;
+    showAuth('reset');
+  }
+
   // Restore auth state
   authToken = localStorage.getItem('authToken');
   currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');

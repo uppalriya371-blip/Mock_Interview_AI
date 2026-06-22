@@ -1,51 +1,59 @@
-﻿import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+﻿import { Injectable, UnauthorizedException, ConflictException, ForbiddenException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import * as dayjs from 'dayjs';
 import { PrismaService } from '../../database/prisma.service';
+import { EmailService } from '../notifications/email.service';
 import { LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) {}
+  private readonly logger = new Logger(AuthService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+    private readonly emailService: EmailService,
+  ) {}
 
   async register(dto: RegisterDto, req: any) {
-    try {
-      const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
-      if (exists) throw new ConflictException('Email already registered');
+   if (!dto.email.toLowerCase().endsWith('@gmail.com')) {
+    throw new ForbiddenException('Only Gmail addresses are allowed to register');
+   }
 
-      const user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          passwordHash: await bcrypt.hash(dto.password, 12),
-          profile: { create: { fullName: dto.fullName, targetCompanies: [] } },
-        },
-      });
-      console.log('✅ USER CREATED:', user.id);
+   const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
+   if (exists) throw new ConflictException('Email already registered');
 
-      await this.createEmailVerification(user.id);
-      console.log('✅ EMAIL VERIFICATION CREATED');
+   const user = await this.prisma.user.create({
+    data: {
+      email: dto.email,
+      passwordHash: await bcrypt.hash(dto.password, 12),
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      profile: { create: { fullName: dto.fullName, targetCompanies: [] } },
+    },
+   });
+   this.logger.log(`User created: ${user.id}`);
 
-      return await this.issueTokens(user, req);
-    } catch (e: any) {
-      console.error('❌ REGISTER ERROR:', e.message);
-      console.error(e.stack);
-      throw e;
-    }
+   return await this.issueTokens(user, req);
   }
 
   async login(dto: LoginDto, req: any) {
-    try {
-      const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-      if (!user?.passwordHash || !(await bcrypt.compare(dto.password, user.passwordHash))) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      return await this.issueTokens(user, req);
-    } catch (e: any) {
-      console.error('❌ LOGIN ERROR:', e.message);
-      throw e;
+    if (!dto.email.toLowerCase().endsWith('@gmail.com')) {
+      throw new ForbiddenException('Only Gmail addresses are allowed');
     }
+
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (!user?.passwordHash || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.isEmailVerified) {
+      throw new ForbiddenException('Please verify your email address before logging in. Check your inbox for the verification link.');
+    }
+
+    return await this.issueTokens(user, req);
   }
 
   async refresh(refreshToken: string, req: any) {
@@ -53,8 +61,11 @@ export class AuthService {
     const session = await this.prisma.session.findFirst({ where: { userId: payload.sub, revokedAt: null } });
     if (!session || !(await bcrypt.compare(refreshToken, session.refreshHash))) throw new UnauthorizedException('Invalid refresh token');
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: payload.sub } });
+    if (!user.isEmailVerified) {
+      throw new ForbiddenException('Please verify your email address before logging in.');
+    }
     await this.prisma.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
-    return this.issueTokens(user, req);
+    return await this.issueTokens(user, req);
   }
 
   async logout(userId: string, refreshToken: string) {
@@ -81,9 +92,15 @@ export class AuthService {
   async requestPasswordReset(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (user) {
+      const plainToken = randomBytes(32).toString('hex');
       await this.prisma.passwordResetToken.create({
-        data: { userId: user.id, tokenHash: this.hash(randomBytes(32).toString('hex')), expiresAt: dayjs().add(30, 'minutes').toDate() },
+        data: { userId: user.id, tokenHash: this.hash(plainToken), expiresAt: dayjs().add(30, 'minutes').toDate() },
       });
+      try {
+        await this.emailService.sendPasswordResetEmail(user.email, plainToken);
+      } catch (e) {
+        this.logger.error(`Failed to send password reset email: ${(e as Error).message}`, (e as Error).stack);
+      }
     }
     return { ok: true };
   }
@@ -99,20 +116,17 @@ export class AuthService {
   }
 
   private async issueTokens(user: { id: string; email: string; role: string }, req: any) {
-    console.log('🔑 issueTokens - secret set:', !!process.env.JWT_ACCESS_SECRET);
     const payload = { sub: user.id, email: user.email, role: user.role };
 
     const accessToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: process.env.JWT_ACCESS_TTL ?? '15m',
     });
-    console.log('✅ ACCESS TOKEN CREATED');
 
     const refreshToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
       expiresIn: process.env.JWT_REFRESH_TTL ?? '30d',
     });
-    console.log('✅ REFRESH TOKEN CREATED');
 
     await this.prisma.session.create({
       data: {
@@ -124,15 +138,20 @@ export class AuthService {
         expiresAt: dayjs().add(30, 'days').toDate(),
       },
     });
-    console.log('✅ SESSION CREATED');
 
     return { accessToken, refreshToken, user: payload };
   }
 
-  private async createEmailVerification(userId: string) {
+  private async createEmailVerification(userId: string, email: string) {
+    const plainToken = randomBytes(32).toString('hex');
     await this.prisma.emailVerificationToken.create({
-      data: { userId, tokenHash: this.hash(randomBytes(32).toString('hex')), expiresAt: dayjs().add(24, 'hours').toDate() },
+      data: { userId, tokenHash: this.hash(plainToken), expiresAt: dayjs().add(24, 'hours').toDate() },
     });
+    try {
+      await this.emailService.sendVerificationEmail(email, plainToken);
+    } catch (e) {
+      this.logger.error(`Failed to send verification email: ${(e as Error).message}`, (e as Error).stack);
+    }
   }
 
   private hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
