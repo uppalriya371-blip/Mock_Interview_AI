@@ -3,7 +3,7 @@
 An AI-powered mock interview platform: practice technical, behavioral, and HR
 interviews with a real AI interviewer, get AI-scored feedback reports, upload
 your resume for tailored questions, and practice coding problems — all in a
-single-page frontend backed by a NestJS API.
+single-page frontend backed by a NestJS API. 
 
 ---
 
